@@ -1,26 +1,26 @@
-# Capítulo 2. Análisis descriptivo de las variables
+# Análisis descriptivo de las variables
 
 **La economía argentina bajo tres gobiernos: Macri (2015-2019), Fernández (2019-2023) y Milei (desde diciembre de 2023)**
 
 > Este documento se genera con `uv run python estudio/descriptivo/descriptivo.py` a partir de `estudio/descriptivo/plantilla.md`, y el mismo script lo copia al final del `README.md`. Las tablas y los números entre llaves de la plantilla los calcula el script con los datos congelados en `data/` (último dato: inflación de {{ultimo_ipc}}, actividad de julio de 2026, cuentas nacionales del segundo trimestre de 2026, cuentas fiscales de agosto de 2026, EPH del primer trimestre de 2026 y mercados al 30/10/2026). El texto interpretativo se escribió sobre esos datos: si se actualizan, las tablas y las figuras cambian solas, pero conviene releer el texto.
 
-## 2.1 Objetivo, organización y criterios
+## 1. Objetivo, organización y criterios
 
-Este capítulo describe, una por una, las variables con las que el estudio evalúa el desempeño económico del gobierno de Javier Milei, y las compara con los dos gobiernos anteriores. No estima ningún modelo causal: su objetivo es conocer los datos antes de modelarlos, es decir, saber qué forma tiene cada distribución, cuánto cambia de un gobierno a otro, qué valores extremos la dominan, cómo se relacionan las variables entre sí y qué propiedades estadísticas (estacionariedad, autocorrelación, estacionalidad, quiebres) van a condicionar el modelo econométrico del capítulo siguiente.
+Este análisis describe, una por una, las variables con las que el estudio evalúa el desempeño económico del gobierno de Javier Milei, y las compara con los dos gobiernos anteriores. No estima ningún modelo causal: su objetivo es conocer los datos antes de modelarlos, es decir, saber qué forma tiene cada distribución, cuánto cambia de un gobierno a otro, qué valores extremos la dominan, cómo se relacionan las variables entre sí y qué propiedades estadísticas (estacionariedad, autocorrelación, estacionalidad, quiebres) van a condicionar el modelo econométrico que se propone al final (sección 7.5).
 
-El capítulo se organiza así. La sección 2.2 resume en una tabla todas las variables, su fuente y su frecuencia. La sección 2.3 muestra las series largas para tener una primera imagen de los diez años. La sección 2.4, el núcleo del capítulo, trata cada variable por separado con el mismo esquema: una **ficha** (qué es y cómo se mide, fuente, por qué se eligió y cuáles son sus limitaciones), una **figura de cuatro paneles** (serie de tiempo con los gobiernos sombreados, histograma superpuesto por gobierno, diagrama de caja y barras de media y mediana), la **tabla de estadística descriptiva**, la **tabla de distribución de frecuencias** y una **interpretación** con el contexto económico de cada período. La sección 2.5 compara los gobiernos con todas las variables a la vez, la 2.6 presenta el análisis bivariado (correlaciones y diagramas de dispersión), la 2.7 las pruebas que preparan el modelo y la 2.8 las limitaciones.
+El documento se organiza así. La sección 2 resume en una tabla todas las variables, su fuente y su frecuencia. La sección 3 muestra las series largas para tener una primera imagen de los diez años. La sección 4, el núcleo del documento, trata cada variable por separado con el mismo esquema: una **ficha** (qué es y cómo se mide, fuente, por qué se eligió y cuáles son sus limitaciones), una **figura de cuatro paneles** (serie de tiempo con los gobiernos sombreados, histograma superpuesto por gobierno, diagrama de caja y barras de media y mediana), la **tabla de estadística descriptiva**, la **tabla de distribución de frecuencias** y una **interpretación** con el contexto económico de cada período. La sección 5 compara los gobiernos con todas las variables a la vez, la 6 presenta el análisis bivariado (correlaciones y diagramas de dispersión), la 7 las pruebas que preparan el modelo y la 8 las limitaciones.
 
-**Criterios comunes a todo el capítulo**
+**Criterios comunes a todo el análisis**
 
 - **Períodos de gobierno.** Macri asumió el 10/12/2015, Fernández el 10/12/2019 y Milei el 10/12/2023. Cada observación se asigna al gobierno que estaba en el cargo en el **punto medio** del período que describe. Así, diciembre de 2023 es de Milei (asumió el día 10 y el mes incluye la devaluación del 13), pero el cuarto trimestre de 2023 y el segundo semestre de 2023 son de Fernández.
 - **Muestra.** La mayoría de las series oficiales de datos.gob.ar que usa el estudio arrancan en enero de 2016. El IPC del INDEC se volvió a publicar en mayo de 2016 (después de la emergencia estadística declarada en enero de ese año), así que la inflación del gobierno de Macri empieza en mayo de 2016 y faltan sus primeros cinco meses, que incluyeron la salida del cepo de diciembre de 2015. **Las estadísticas de Macri son de un período incompleto y probablemente subestiman la inflación y la caída salarial de su primer año.**
 - **Deflactor.** Las variables "reales" se deflactan mes a mes por el IPC nacional del INDEC (diciembre de 2016 = 100), extendido hacia atrás hasta abril de 2016 con las variaciones del IPC-GBA. La base de los índices reales es noviembre de 2023 = 100, el último mes completo del gobierno anterior.
 - **Qué serie se describe.** Cuando una variable tiene tendencia (un índice de salario real, el nivel de reservas), su media por gobierno depende sobre todo de dónde empezó cada período, y su histograma mezcla niveles de años distintos. Por eso, para esas variables, la figura muestra el nivel en el tiempo pero el histograma, el boxplot y la tabla de frecuencias describen su **tasa de variación** (mensual o interanual), que es la que tiene una distribución comparable entre gobiernos. La tabla descriptiva del nivel se agrega aparte.
 - **Estadísticos.** N, media, mediana, desvío estándar, mínimo, primer y tercer cuartil (Q1, Q3), máximo, coeficiente de variación, asimetría y curtosis. Se usan los estimadores muestrales corregidos de pandas. La curtosis es *en exceso*: 0 corresponde a una distribución normal y valores positivos indican colas más pesadas que la normal. El coeficiente de variación (CV = desvío / media × 100) solo se informa cuando la variable es estrictamente positiva: en tasas que cambian de signo la media puede estar cerca de cero y el CV se vuelve arbitrariamente grande y no tiene interpretación.
-- **Tablas de frecuencias.** Los intervalos son **comunes a los tres gobiernos**, para que las frecuencias relativas se puedan comparar fila por fila, y son cerrados a izquierda y abiertos a derecha, [a; b). El número de intervalos sigue la regla de Sturges, k = 1 + 3,322 · log₁₀ N, con N el total de observaciones de los tres gobiernos, y el ancho se redondea a un valor "limpio" (1, 2, 2,5 o 5 por una potencia de 10). Como casi todas las series tienen colas pesadas, los intervalos cubren el rango entre los percentiles 2,5 y 97,5 y lo que queda afuera se agrupa en dos **clases abiertas** en los extremos ("menos de a", "b o más"); si no, un único mes extremo, como diciembre de 2023, obligaría a usar intervalos tan anchos que toda la distribución caería en uno o dos. Para cada gobierno se informan la frecuencia absoluta (fa), la relativa (fr, %) y la relativa acumulada (Fr, %). La inflación mensual es la única variable con intervalos de distinto ancho, elegidos a mano (ver 2.4.1).
+- **Tablas de frecuencias.** Los intervalos son **comunes a los tres gobiernos**, para que las frecuencias relativas se puedan comparar fila por fila, y son cerrados a izquierda y abiertos a derecha, [a; b). El número de intervalos sigue la regla de Sturges, k = 1 + 3,322 · log₁₀ N, con N el total de observaciones de los tres gobiernos, y el ancho se redondea a un valor "limpio" (1, 2, 2,5 o 5 por una potencia de 10). Como casi todas las series tienen colas pesadas, los intervalos cubren el rango entre los percentiles 2,5 y 97,5 y lo que queda afuera se agrupa en dos **clases abiertas** en los extremos ("menos de a", "b o más"); si no, un único mes extremo, como diciembre de 2023, obligaría a usar intervalos tan anchos que toda la distribución caería en uno o dos. Para cada gobierno se informan la frecuencia absoluta (fa), la relativa (fr, %) y la relativa acumulada (Fr, %). La inflación mensual es la única variable con intervalos de distinto ancho, elegidos a mano (ver 4.1).
 - **Lectura de las figuras.** En las series de tiempo el fondo marca el gobierno (amarillo Macri, verde Fernández, azul Milei) y las líneas punteadas numeradas, los eventos: 1 PASO de 2019, 2 vuelta del cepo, 3 cuarentena, 4 legislativas de 2021, 5 balotaje de 2023, 6 devaluación de diciembre de 2023, 7 salida del cepo, 8 elección en la provincia de Buenos Aires y 9 legislativas de 2025. Los histogramas están superpuestos (contorno de cada gobierno) y en porcentaje de las observaciones de cada uno, de modo que gobiernos con distinto N se comparan bien. En los boxplots la caja va de Q1 a Q3, la línea es la mediana, los bigotes llegan hasta 1,5 rangos intercuartiles y los puntos son atípicos; cuando un único valor extremo aplastaría las cajas, el eje se recorta y los valores fuera de escala se informan al pie.
 
-## 2.2 Variables del estudio
+## 2. Variables del estudio
 
 | Dimensión | Variable | Fuente | Id / origen | Frecuencia | Unidad | Período |
 |:---|:---|:---|:---|:---|:---|:---|
@@ -53,25 +53,25 @@ El capítulo se organiza así. La sección 2.2 resume en una tabla todas las var
 
 Todas las series de datos.gob.ar se descargan con `load_series` (`src/quantkit/data.py`), pidiendo por separado las mensuales y las trimestrales: si se mezclan frecuencias en una misma consulta, la API agrega en silencio todas las series a la frecuencia más baja. El PBI trimestral del INDEC está **a tasa anual**: el PBI de un año es el promedio de sus cuatro trimestres, no la suma, y los flujos fiscales de 12 meses se dividen por ese promedio.
 
-## 2.3 Panorama: las series largas
+## 3. Panorama: las series largas
 
 Antes de tratar cada variable conviene mirarlas juntas en el tiempo, porque buena parte de lo que después aparece en las tablas (asimetrías, colas pesadas, cambios de media) se explica por unos pocos episodios que se ven a simple vista.
 
 ![Precios y salarios](figuras/D01_series_precios_salarios.png)
 
-**Figura 2.#.** La inflación mensual tiene tres tramos nítidos: un nivel de 1% a 4% con Macri (con saltos en 2018 y después de las PASO de 2019), una aceleración casi continua con Fernández hasta 12,8% en octubre-noviembre de 2023, y con Milei un pico de 25,5% en diciembre de 2023 seguido de una desinflación muy rápida que se detiene en torno a 2% mensual desde mediados de 2025. La interanual, en escala logarítmica, muestra lo mismo sin el ruido mensual: 289% en abril de 2024 y alrededor de 31-33% desde entonces. Los salarios reales del panel inferior cuentan otra historia: la caída es de larga data (el privado registrado venía de 120-127 en 2017), con un escalón abrupto en diciembre de 2023 que el sector privado recuperó a lo largo de 2024 y el sector público no. El salario no registrado es la serie más volátil y la única que con Milei supera su nivel de 2023. El salario mínimo real cae en cada gobierno y se desploma en el actual; el tipo de cambio real salta con la devaluación y vuelve a la zona de 100 en 2025-2026: la apreciación real borró la devaluación.
+**Figura #.** La inflación mensual tiene tres tramos nítidos: un nivel de 1% a 4% con Macri (con saltos en 2018 y después de las PASO de 2019), una aceleración casi continua con Fernández hasta 12,8% en octubre-noviembre de 2023, y con Milei un pico de 25,5% en diciembre de 2023 seguido de una desinflación muy rápida que se detiene en torno a 2% mensual desde mediados de 2025. La interanual, en escala logarítmica, muestra lo mismo sin el ruido mensual: 289% en abril de 2024 y alrededor de 31-33% desde entonces. Los salarios reales del panel inferior cuentan otra historia: la caída es de larga data (el privado registrado venía de 120-127 en 2017), con un escalón abrupto en diciembre de 2023 que el sector privado recuperó a lo largo de 2024 y el sector público no. El salario no registrado es la serie más volátil y la única que con Milei supera su nivel de 2023. El salario mínimo real cae en cada gobierno y se desploma en el actual; el tipo de cambio real salta con la devaluación y vuelve a la zona de 100 en 2025-2026: la apreciación real borró la devaluación.
 
 ![Actividad, fiscal y social](figuras/D02_series_actividad_fiscal_social.png)
 
-**Figura 2.#.** La actividad mensual (EMAE) no tiene tendencia de largo plazo: oscila alrededor de 100 durante diez años, con la caída de la cuarentena (marzo-abril de 2020) como único valor extremo. La inversión amplifica los ciclos del PBI: cae y sube entre dos y cuatro veces más que el producto en cada episodio. El resultado fiscal es la serie con el cambio de nivel más claro de todo el estudio: del rango −2% a −6% del PBI a un superávit primario de 1% a 2% sostenido desde 2024. La pobreza tiene un pico en el primer semestre de 2024 y cae a mínimos de la serie en el segundo de 2025; la desocupación se mueve en un rango más estrecho.
+**Figura #.** La actividad mensual (EMAE) no tiene tendencia de largo plazo: oscila alrededor de 100 durante diez años, con la caída de la cuarentena (marzo-abril de 2020) como único valor extremo. La inversión amplifica los ciclos del PBI: cae y sube entre dos y cuatro veces más que el producto en cada episodio. El resultado fiscal es la serie con el cambio de nivel más claro de todo el estudio: del rango −2% a −6% del PBI a un superávit primario de 1% a 2% sostenido desde 2024. La pobreza tiene un pico en el primer semestre de 2024 y cae a mínimos de la serie en el segundo de 2025; la desocupación se mueve en un rango más estrecho.
 
 ![Mercados](figuras/D03_series_mercados.png)
 
-**Figura 2.#.** Las variables de mercado reaccionan a los eventos políticos con más claridad que las macroeconómicas: el riesgo país salta con las PASO de 2019 (evento 1) y vuelve a subir antes de la elección de Buenos Aires de septiembre de 2025 (evento 8); la canasta de ADRs pierde la mitad de su valor en un día después de esas PASO y casi se triplica entre la asunción de Milei y enero de 2025. La brecha cambiaria, cero mientras no hay cepo, llega a 150% en 2023 y se cierra con la salida del cepo (evento 7), el mismo mes del salto de reservas por el desembolso del FMI.
+**Figura #.** Las variables de mercado reaccionan a los eventos políticos con más claridad que las macroeconómicas: el riesgo país salta con las PASO de 2019 (evento 1) y vuelve a subir antes de la elección de Buenos Aires de septiembre de 2025 (evento 8); la canasta de ADRs pierde la mitad de su valor en un día después de esas PASO y casi se triplica entre la asunción de Milei y enero de 2025. La brecha cambiaria, cero mientras no hay cepo, llega a 150% en 2023 y se cierra con la salida del cepo (evento 7), el mismo mes del salto de reservas por el desembolso del FMI.
 
-## 2.4 Análisis por variable
+## 4. Análisis por variable
 
-### 2.4.1 Precios
+### 4.1 Precios
 
 #### Inflación mensual
 
@@ -81,17 +81,17 @@ Antes de tratar cada variable conviene mirarlas juntas en el tiempo, porque buen
 
 *Por qué se eligió.* La estabilización de precios fue el objetivo central y explícito del programa económico de Milei y es la variable que condiciona a todas las demás: el poder de compra del salario, el tipo de cambio real y el valor real del gasto público dependen de ella. La frecuencia mensual da además la mayor cantidad de observaciones del estudio para comparar gobiernos.
 
-*Limitaciones.* La canasta tiene más de veinte años y pondera poco los servicios y las tarifas, que fueron los precios que más subieron desde 2024: con ponderaciones actuales la inflación de 2024-2025 sería algo mayor. Entre enero y abril de 2016 no hay IPC del INDEC (ArgentinaDatos usa ahí el IPC de CABA, que este capítulo descarta), de modo que faltan los primeros meses de Macri.
+*Limitaciones.* La canasta tiene más de veinte años y pondera poco los servicios y las tarifas, que fueron los precios que más subieron desde 2024: con ponderaciones actuales la inflación de 2024-2025 sería algo mayor. Entre enero y abril de 2016 no hay IPC del INDEC (ArgentinaDatos usa ahí el IPC de CABA, que acá se descarta), de modo que faltan los primeros meses de Macri.
 
 ![Inflación mensual](figuras/{{fig_infl_m}})
 
-**Figura 2.#. Inflación mensual por gobierno: serie, histograma, boxplot y media contra mediana.**
+**Figura #. Inflación mensual por gobierno: serie, histograma, boxplot y media contra mediana.**
 
-**Tabla 2.#. Estadística descriptiva de la inflación mensual (%)**
+**Tabla #. Estadística descriptiva de la inflación mensual (%)**
 
 {{desc_infl_m}}
 
-**Tabla 2.#. Distribución de frecuencias de la inflación mensual (%)**
+**Tabla #. Distribución de frecuencias de la inflación mensual (%)**
 
 {{frec_infl_m}}
 
@@ -103,7 +103,7 @@ La tabla de frecuencias permite leer la forma de cada distribución sin pasar po
 
 El contexto económico explica esas formas. Con Macri, la inflación bajó en 2017 bajo un esquema de metas de inflación y volvió a subir con las crisis cambiarias de 2018 y de agosto de 2019; nunca superó el 6,5% mensual. Con Fernández, la combinación de emisión para financiar el déficit (en especial en 2020), controles de precios y cepo cambiario con brecha creciente produjo una aceleración casi monótona: cada año la inflación mensual típica fue más alta que el anterior, hasta 12,8% en noviembre de 2023, después de la devaluación posterior a las PASO de ese año. Con Milei, la devaluación del 13 de diciembre de 2023 (de 366 a 800 pesos por dólar) y la liberación de precios regulados llevaron la inflación a 25,5% en diciembre; desde ahí bajó en forma muy rápida, con un tipo de cambio que se movió al 2% mensual (crawling peg), superávit fiscal y fin del financiamiento monetario al Tesoro. Desde mediados de 2025 la desinflación se estanca entre 1,5% y 3% mensual.
 
-Para toda la muestra la curtosis de {{infl_m_Total_curt}} indica colas mucho más pesadas que una normal, y el CV de Milei ({{infl_m_Milei_cv}}%) duplica el de los gobiernos anteriores: es el período con la inflación menos estable, aunque esa inestabilidad se concentra en los primeros cuatro meses. Para el modelo, esto implica errores no normales y la necesidad de tratar explícitamente los meses de la devaluación (sección 2.7).
+Para toda la muestra la curtosis de {{infl_m_Total_curt}} indica colas mucho más pesadas que una normal, y el CV de Milei ({{infl_m_Milei_cv}}%) duplica el de los gobiernos anteriores: es el período con la inflación menos estable, aunque esa inestabilidad se concentra en los primeros cuatro meses. Para el modelo, esto implica errores no normales y la necesidad de tratar explícitamente los meses de la devaluación (sección 7).
 
 #### Inflación interanual
 
@@ -117,13 +117,13 @@ Para toda la muestra la curtosis de {{infl_m_Total_curt}} indica colas mucho má
 
 ![Inflación interanual](figuras/{{fig_infl_a}})
 
-**Figura 2.#. Inflación interanual por gobierno.**
+**Figura #. Inflación interanual por gobierno.**
 
-**Tabla 2.#. Estadística descriptiva de la inflación interanual (%)**
+**Tabla #. Estadística descriptiva de la inflación interanual (%)**
 
 {{desc_infl_a}}
 
-**Tabla 2.#. Distribución de frecuencias de la inflación interanual (%)**
+**Tabla #. Distribución de frecuencias de la inflación interanual (%)**
 
 {{frec_infl_a}}
 
@@ -145,13 +145,13 @@ Económicamente, la interanual es la variable que el público "siente", y explic
 
 ![Inflación núcleo](figuras/{{fig_infl_nucleo}})
 
-**Figura 2.#. Inflación núcleo por gobierno.**
+**Figura #. Inflación núcleo por gobierno.**
 
-**Tabla 2.#. Estadística descriptiva de la inflación núcleo (% mensual)**
+**Tabla #. Estadística descriptiva de la inflación núcleo (% mensual)**
 
 {{desc_infl_nucleo}}
 
-**Tabla 2.#. Distribución de frecuencias de la inflación núcleo (% mensual)**
+**Tabla #. Distribución de frecuencias de la inflación núcleo (% mensual)**
 
 {{frec_infl_nucleo}}
 
@@ -167,23 +167,23 @@ La diferencia con la inflación general está en el tiempo: la núcleo bajó pri
 
 *Fuente y período.* INDEC (`148.3_IREGULANAL_DICI_M_22`), enero de 2017 a agosto de 2026. Mensual.
 
-*Por qué se eligió.* Es la variable de política más directa del IPC: mide la "corrección de precios relativos" que el gobierno de Milei planteó como condición de la estabilización y que es la contracara de la baja de subsidios del capítulo fiscal.
+*Por qué se eligió.* Es la variable de política más directa del IPC: mide la "corrección de precios relativos" que el gobierno de Milei planteó como condición de la estabilización y que es la contracara de la baja de subsidios de las cuentas fiscales (sección 4.4).
 
 *Limitaciones.* El peso de los regulados en el IPC es de alrededor del 20% con ponderaciones de 2004: probablemente subestima el peso actual de las tarifas en el gasto de los hogares.
 
 ![Regulados](figuras/{{fig_infl_regulados}})
 
-**Figura 2.#. Inflación de regulados por gobierno; arriba, precio relativo regulados / núcleo.**
+**Figura #. Inflación de regulados por gobierno; arriba, precio relativo regulados / núcleo.**
 
-**Tabla 2.#. Estadística descriptiva de la inflación de regulados (% mensual)**
+**Tabla #. Estadística descriptiva de la inflación de regulados (% mensual)**
 
 {{desc_infl_regulados}}
 
-**Tabla 2.#. Estadística descriptiva del precio relativo regulados / núcleo (nov-2023 = 100)**
+**Tabla #. Estadística descriptiva del precio relativo regulados / núcleo (nov-2023 = 100)**
 
 {{desc_regulados_vs_nucleo}}
 
-**Tabla 2.#. Distribución de frecuencias de la inflación de regulados (% mensual)**
+**Tabla #. Distribución de frecuencias de la inflación de regulados (% mensual)**
 
 {{frec_infl_regulados}}
 
@@ -193,7 +193,7 @@ En las tasas mensuales, eso se ve como una media de regulados con Milei ({{infl_
 
 La lectura económica es que una parte de la inflación de 2024 fue el pago de precios reprimidos durante el gobierno anterior, y que esa corrección siguió hasta 2026 con aumentos mensuales de regulados mayores que los de la núcleo en la mayoría de los meses. Para el análisis distributivo es un dato central: los hogares de ingresos bajos gastan una proporción mayor en tarifas y transporte, de modo que su inflación efectiva fue más alta que la del promedio.
 
-### 2.4.2 Ingresos
+### 4.2 Ingresos
 
 Las cuatro series de salario de esta sección son índices, con tendencia, así que la figura muestra el nivel real (noviembre de 2023 = 100) y el histograma, el boxplot y la tabla de frecuencias describen la **variación mensual del salario real**, en %. La tabla descriptiva del nivel se agrega a continuación de la de variaciones.
 
@@ -209,17 +209,17 @@ Las cuatro series de salario de esta sección son índices, con tendencia, así 
 
 ![Salario privado registrado](figuras/{{fig_sal_priv_reg}})
 
-**Figura 2.#. Salario real privado registrado: nivel (arriba) y distribución de su variación mensual por gobierno.**
+**Figura #. Salario real privado registrado: nivel (arriba) y distribución de su variación mensual por gobierno.**
 
-**Tabla 2.#. Estadística descriptiva de la variación mensual del salario real privado registrado (%)**
+**Tabla #. Estadística descriptiva de la variación mensual del salario real privado registrado (%)**
 
 {{desc_d_sal_priv_reg}}
 
-**Tabla 2.#. Estadística descriptiva del nivel del salario real privado registrado (nov-2023 = 100)**
+**Tabla #. Estadística descriptiva del nivel del salario real privado registrado (nov-2023 = 100)**
 
 {{desc_sal_priv_reg}}
 
-**Tabla 2.#. Distribución de frecuencias de la variación mensual del salario real privado registrado (%)**
+**Tabla #. Distribución de frecuencias de la variación mensual del salario real privado registrado (%)**
 
 {{frec_sal_priv_reg}}
 
@@ -241,17 +241,17 @@ Es un patrón de **"shock y recomposición"**, distinto de la erosión gradual d
 
 ![Salario público](figuras/{{fig_sal_publico}})
 
-**Figura 2.#. Salario real público: nivel y distribución de su variación mensual por gobierno.**
+**Figura #. Salario real público: nivel y distribución de su variación mensual por gobierno.**
 
-**Tabla 2.#. Estadística descriptiva de la variación mensual del salario real público (%)**
+**Tabla #. Estadística descriptiva de la variación mensual del salario real público (%)**
 
 {{desc_d_sal_publico}}
 
-**Tabla 2.#. Estadística descriptiva del nivel del salario real público (nov-2023 = 100)**
+**Tabla #. Estadística descriptiva del nivel del salario real público (nov-2023 = 100)**
 
 {{desc_sal_publico}}
 
-**Tabla 2.#. Distribución de frecuencias de la variación mensual del salario real público (%)**
+**Tabla #. Distribución de frecuencias de la variación mensual del salario real público (%)**
 
 {{frec_sal_publico}}
 
@@ -273,21 +273,21 @@ La comparación con el privado es la evidencia más directa de que la política 
 
 ![Salario no registrado](figuras/{{fig_sal_no_reg}})
 
-**Figura 2.#. Salario real no registrado: nivel y distribución de su variación mensual por gobierno.**
+**Figura #. Salario real no registrado: nivel y distribución de su variación mensual por gobierno.**
 
-**Tabla 2.#. Estadística descriptiva de la variación mensual del salario real no registrado (%)**
+**Tabla #. Estadística descriptiva de la variación mensual del salario real no registrado (%)**
 
 {{desc_d_sal_no_reg}}
 
-**Tabla 2.#. Estadística descriptiva del nivel del salario real no registrado (nov-2023 = 100)**
+**Tabla #. Estadística descriptiva del nivel del salario real no registrado (nov-2023 = 100)**
 
 {{desc_sal_no_reg}}
 
-**Tabla 2.#. Distribución de frecuencias de la variación mensual del salario real no registrado (%)**
+**Tabla #. Distribución de frecuencias de la variación mensual del salario real no registrado (%)**
 
 {{frec_sal_no_reg}}
 
-El salario no registrado es la excepción del capítulo: con Milei su variación mensual media es positiva ({{d_sal_no_reg_Milei_media}}% por mes, mediana {{d_sal_no_reg_Milei_mediana}}%), contra caídas promedio en los dos gobiernos anteriores ({{d_sal_no_reg_Macri_media}}% y {{d_sal_no_reg_Fernández_media}}%). La tabla de frecuencias muestra un corrimiento de toda la distribución: la clase modal de Milei es {{sal_no_reg_Milei_moda}} ({{sal_no_reg_Milei_moda_fr}}% de los meses), dos clases por encima de la de Fernández ({{sal_no_reg_Fernández_moda}}), y desde febrero de 2024 el salario informal le ganó a la inflación en 23 de 25 meses.
+El salario no registrado es la excepción de todo el análisis: con Milei su variación mensual media es positiva ({{d_sal_no_reg_Milei_media}}% por mes, mediana {{d_sal_no_reg_Milei_mediana}}%), contra caídas promedio en los dos gobiernos anteriores ({{d_sal_no_reg_Macri_media}}% y {{d_sal_no_reg_Fernández_media}}%). La tabla de frecuencias muestra un corrimiento de toda la distribución: la clase modal de Milei es {{sal_no_reg_Milei_moda}} ({{sal_no_reg_Milei_moda_fr}}% de los meses), dos clases por encima de la de Fernández ({{sal_no_reg_Fernández_moda}}), y desde febrero de 2024 el salario informal le ganó a la inflación en 23 de 25 meses.
 
 En niveles, recorre todo el camino de {{sal_no_reg_Milei_min}} (enero de 2024) a {{sal_no_reg_Milei_max}} (febrero de 2026) dentro del mismo gobierno, por eso su CV en niveles ({{sal_no_reg_Milei_cv}}%) es el mayor de todos los salarios y su desvío ({{sal_no_reg_Milei_desvio}}) cuadruplica el de Fernández. Termina el período por encima del nivel de 2019, aunque todavía debajo del máximo de 2017.
 
@@ -305,17 +305,17 @@ La lectura económica es que el salario informal, sin paritarias que lo protejan
 
 ![Salario mínimo](figuras/{{fig_smvm}})
 
-**Figura 2.#. Salario mínimo real por gobierno (nivel, nov-2023 = 100).**
+**Figura #. Salario mínimo real por gobierno (nivel, nov-2023 = 100).**
 
-**Tabla 2.#. Estadística descriptiva del salario mínimo real (nov-2023 = 100)**
+**Tabla #. Estadística descriptiva del salario mínimo real (nov-2023 = 100)**
 
 {{desc_smvm}}
 
-**Tabla 2.#. Distribución de frecuencias del salario mínimo real (nov-2023 = 100)**
+**Tabla #. Distribución de frecuencias del salario mínimo real (nov-2023 = 100)**
 
 {{frec_smvm}}
 
-El salario mínimo real promedio con Milei ({{smvm_Milei_media}}) es la mitad del de Macri ({{smvm_Macri_media}}) y dos tercios del de Fernández ({{smvm_Fernández_media}}). La tabla de frecuencias es la más contundente del capítulo: las tres distribuciones casi no se superponen. El {{smvm_Macri_moda_fr}}% de los meses de Macri está en {{smvm_Macri_moda}}; el {{smvm_Fernández_moda_fr}}% de los de Fernández en {{smvm_Fernández_moda}}; y el {{smvm_Milei_moda_fr}}% de los de Milei en {{smvm_Milei_moda}}. El boxplot muestra tres cajas escalonadas, sin solapamiento entre ellas.
+El salario mínimo real promedio con Milei ({{smvm_Milei_media}}) es la mitad del de Macri ({{smvm_Macri_media}}) y dos tercios del de Fernández ({{smvm_Fernández_media}}). La tabla de frecuencias es la más contundente de todo el análisis: las tres distribuciones casi no se superponen. El {{smvm_Macri_moda_fr}}% de los meses de Macri está en {{smvm_Macri_moda}}; el {{smvm_Fernández_moda_fr}}% de los de Fernández en {{smvm_Fernández_moda}}; y el {{smvm_Milei_moda_fr}}% de los de Milei en {{smvm_Milei_moda}}. El boxplot muestra tres cajas escalonadas, sin solapamiento entre ellas.
 
 A diferencia de los salarios de mercado, el mínimo no se recuperó después del shock de diciembre de 2023: pasó de 100 a 70,6 en dos meses (diciembre y enero) y desde ahí cae de manera casi monótona hasta su mínimo de la serie ({{smvm_Milei_min}}) en el último dato. Desde mediados de 2024 se ajusta casi todos los meses, pero siempre por debajo de la inflación. La asimetría positiva de Milei ({{smvm_Milei_asim}}) la produce el primer mes (85,2 en diciembre de 2023), que todavía tenía el nivel heredado.
 
@@ -329,31 +329,31 @@ El salario real es un cociente: lo que se cobra en pesos (salario nominal) divid
 
 y por eso con inflación alta las dos tasas pueden ser enormes y el resultado real, chico: un aumento nominal de 300% puede ser una pérdida real si la inflación fue de 330%. Las series nominales son los mismos índices de las secciones anteriores sin deflactar, en la misma ventana de tiempo.
 
-**Tabla 2.#. Variación mensual del salario nominal privado registrado (%)**
+**Tabla #. Variación mensual del salario nominal privado registrado (%)**
 
 {{desc_dn_sal_priv_reg}}
 
-**Tabla 2.#. Variación mensual del salario nominal público (%)**
+**Tabla #. Variación mensual del salario nominal público (%)**
 
 {{desc_dn_sal_publico}}
 
-**Tabla 2.#. Variación mensual del salario nominal no registrado (%)**
+**Tabla #. Variación mensual del salario nominal no registrado (%)**
 
 {{desc_dn_sal_no_reg}}
 
-**Tabla 2.#. Variación mensual del salario mínimo nominal (%)**
+**Tabla #. Variación mensual del salario mínimo nominal (%)**
 
 {{desc_dn_smvm}}
 
 Los aumentos nominales mensuales siguen de cerca a la inflación de cada gobierno: el salario privado registrado subió en promedio {{dn_sal_priv_reg_Macri_media}}% por mes con Macri, {{dn_sal_priv_reg_Fernández_media}}% con Fernández y {{dn_sal_priv_reg_Milei_media}}% con Milei, contra una inflación media de {{infl_m_Macri_media}}%, {{infl_m_Fernández_media}}% y {{infl_m_Milei_media}}%. Con Milei la media y la mediana ({{dn_sal_priv_reg_Milei_mediana}}%) se separan mucho, igual que en la inflación: los aumentos nominales más grandes de toda la serie (hasta {{dn_sal_priv_reg_Milei_max}}% en un mes) llegaron en los meses posteriores a la devaluación, para recomponer lo perdido, y después se desaceleraron junto con los precios. El salario no registrado es el único con aumentos nominales mensuales mayores con Milei ({{dn_sal_no_reg_Milei_media}}%) que con Fernández ({{dn_sal_no_reg_Fernández_media}}%), aun con menos inflación: es la contracara nominal de su recuperación real. El salario mínimo tiene una distribución particular: su mediana es baja (0% con Macri) porque se ajustaba por decreto pocas veces al año y la mayoría de los meses no cambiaba.
 
-**Tabla 2.#. Descomposición de la variación de cada salario: nominal, inflación y real**
+**Tabla #. Descomposición de la variación de cada salario: nominal, inflación y real**
 
 {{tabla_nominal_real}}
 
 ![Salario nominal contra real](figuras/D13_salario_nominal_vs_real.png)
 
-**Figura 2.#.** El panel izquierdo compara mes a mes los aumentos nominales con la inflación desde 2022: cuando la línea del salario queda debajo de la barra de inflación, el salario real cae ese mes. En diciembre de 2023 la brecha es máxima: precios +25,5% contra aumentos de 11,0% en el privado registrado y 5,5% en el público. Desde febrero de 2024 la relación se invierte y el salario privado supera a la inflación en 18 de los 30 meses siguientes, lo que explica su recuperación real a lo largo de 2024. El público también le gana a la inflación en la mitad de esos meses, pero por márgenes más chicos, y nunca recupera el escalón inicial. El panel derecho resume cada gobierno en términos anualizados. Con Fernández los cuatro salarios subieron entre 71% y 77% nominal por año contra una inflación de 79%: perdieron poco por año pero de manera constante. Con Milei la dispersión entre salarios es mucho mayor: con una inflación de alrededor de 70-80% anual en la ventana de cada serie, el privado registrado subió {{nr_sal_priv_reg_Milei_nom}}% nominal por año (real {{nr_sal_priv_reg_Milei_real}}%), el público {{nr_sal_publico_Milei_nom}}% (real {{nr_sal_publico_Milei_real}}%), el no registrado {{nr_sal_no_reg_Milei_nom}}% (real +{{nr_sal_no_reg_Milei_real}}%) y el mínimo solo {{nr_smvm_Milei_nom}}% (real {{nr_smvm_Milei_real}}%). Que el salario mínimo y el público, los dos que fija o negocia directamente el Estado, sean los que más quedaron atrás de la inflación es consistente con que la política salarial del sector público fue parte del ancla antiinflacionaria y del ajuste fiscal. La lección metodológica es que en una economía con inflación de tres dígitos una suba nominal "récord" no dice nada por sí sola: hay que compararla siempre con la inflación de la misma ventana.
+**Figura #.** El panel izquierdo compara mes a mes los aumentos nominales con la inflación desde 2022: cuando la línea del salario queda debajo de la barra de inflación, el salario real cae ese mes. En diciembre de 2023 la brecha es máxima: precios +25,5% contra aumentos de 11,0% en el privado registrado y 5,5% en el público. Desde febrero de 2024 la relación se invierte y el salario privado supera a la inflación en 18 de los 30 meses siguientes, lo que explica su recuperación real a lo largo de 2024. El público también le gana a la inflación en la mitad de esos meses, pero por márgenes más chicos, y nunca recupera el escalón inicial. El panel derecho resume cada gobierno en términos anualizados. Con Fernández los cuatro salarios subieron entre 71% y 77% nominal por año contra una inflación de 79%: perdieron poco por año pero de manera constante. Con Milei la dispersión entre salarios es mucho mayor: con una inflación de alrededor de 70-80% anual en la ventana de cada serie, el privado registrado subió {{nr_sal_priv_reg_Milei_nom}}% nominal por año (real {{nr_sal_priv_reg_Milei_real}}%), el público {{nr_sal_publico_Milei_nom}}% (real {{nr_sal_publico_Milei_real}}%), el no registrado {{nr_sal_no_reg_Milei_nom}}% (real +{{nr_sal_no_reg_Milei_real}}%) y el mínimo solo {{nr_smvm_Milei_nom}}% (real {{nr_smvm_Milei_real}}%). Que el salario mínimo y el público, los dos que fija o negocia directamente el Estado, sean los que más quedaron atrás de la inflación es consistente con que la política salarial del sector público fue parte del ancla antiinflacionaria y del ajuste fiscal. La lección metodológica es que en una economía con inflación de tres dígitos una suba nominal "récord" no dice nada por sí sola: hay que compararla siempre con la inflación de la misma ventana.
 
 #### Salario en blanco contra salario en negro (EPH)
 
@@ -367,13 +367,13 @@ Los aumentos nominales mensuales siguen de cerca a la inflación de cada gobiern
 
 ![Salario en negro sobre salario en blanco](figuras/{{fig_eph_ratio}})
 
-**Figura 2.#. Salario medio de los asalariados no registrados por cada $100 de los registrados (EPH).**
+**Figura #. Salario medio de los asalariados no registrados por cada $100 de los registrados (EPH).**
 
-**Tabla 2.#. Estadística descriptiva del salario en negro por cada $100 en blanco (%)**
+**Tabla #. Estadística descriptiva del salario en negro por cada $100 en blanco (%)**
 
 {{desc_eph_ratio}}
 
-**Tabla 2.#. Distribución de frecuencias del salario en negro por cada $100 en blanco (%)**
+**Tabla #. Distribución de frecuencias del salario en negro por cada $100 en blanco (%)**
 
 {{frec_eph_ratio}}
 
@@ -395,13 +395,13 @@ La forma en V coincide con la del índice de salarios no registrados, aunque vie
 
 ![Tasa de no registro](figuras/{{fig_eph_tasa}})
 
-**Figura 2.#. Asalariados no registrados como % del total de asalariados (EPH).**
+**Figura #. Asalariados no registrados como % del total de asalariados (EPH).**
 
-**Tabla 2.#. Estadística descriptiva de la tasa de asalariados no registrados (%)**
+**Tabla #. Estadística descriptiva de la tasa de asalariados no registrados (%)**
 
 {{desc_eph_tasa}}
 
-**Tabla 2.#. Distribución de frecuencias de la tasa de asalariados no registrados (%)**
+**Tabla #. Distribución de frecuencias de la tasa de asalariados no registrados (%)**
 
 {{frec_eph_tasa}}
 
@@ -411,7 +411,7 @@ La distribución de Fernández es la más asimétrica ({{eph_tasa_Fernández_asi
 
 Leída junto con la anterior, la conclusión es que con Milei el salario informal mejoró en relación con el formal, pero dentro de un mercado de trabajo en el que más de un tercio de los asalariados sigue sin registrar y la proporción no bajó. La mejora del ingreso informal no vino de una formalización.
 
-### 2.4.3 Actividad e inversión
+### 4.3 Actividad e inversión
 
 #### Actividad económica mensual (EMAE)
 
@@ -425,17 +425,17 @@ Leída junto con la anterior, la conclusión es que con Milei el salario informa
 
 ![EMAE](figuras/{{fig_emae}})
 
-**Figura 2.#. EMAE desestacionalizado (nivel) y distribución de su variación mensual por gobierno.**
+**Figura #. EMAE desestacionalizado (nivel) y distribución de su variación mensual por gobierno.**
 
-**Tabla 2.#. Estadística descriptiva de la variación mensual del EMAE (%)**
+**Tabla #. Estadística descriptiva de la variación mensual del EMAE (%)**
 
 {{desc_d_emae}}
 
-**Tabla 2.#. Estadística descriptiva del nivel del EMAE (nov-2023 = 100)**
+**Tabla #. Estadística descriptiva del nivel del EMAE (nov-2023 = 100)**
 
 {{desc_emae}}
 
-**Tabla 2.#. Distribución de frecuencias de la variación mensual del EMAE (%)**
+**Tabla #. Distribución de frecuencias de la variación mensual del EMAE (%)**
 
 {{frec_emae}}
 
@@ -451,19 +451,19 @@ En niveles, el período de Milei tiene una forma de "pozo y rebote": el EMAE cae
 
 *Fuente y período.* INDEC (`4.2_OGP_2004_T_17`), primer trimestre de 2017 (primera variación interanual) al segundo trimestre de 2026. Trimestral, en % interanual.
 
-*Por qué se eligió.* Es la medida estándar del desempeño agregado y la base de las comparaciones internacionales y del crecimiento por habitante del capítulo 1.
+*Por qué se eligió.* Es la medida estándar del desempeño agregado y la base de las comparaciones internacionales y del crecimiento por habitante que muestra la primera parte de este README.
 
 *Limitaciones.* El INDEC publica cada trimestre **a tasa anual**. Con 10 trimestres de Milei, cualquier diferencia de medias tiene muy poca potencia estadística. Los ponderadores de 2004 están desactualizados.
 
 ![PBI](figuras/{{fig_pib}})
 
-**Figura 2.#. PBI real: variación interanual del trimestre por gobierno.**
+**Figura #. PBI real: variación interanual del trimestre por gobierno.**
 
-**Tabla 2.#. Estadística descriptiva del crecimiento interanual del PBI (%)**
+**Tabla #. Estadística descriptiva del crecimiento interanual del PBI (%)**
 
 {{desc_g_pib}}
 
-**Tabla 2.#. Distribución de frecuencias del crecimiento interanual del PBI (%)**
+**Tabla #. Distribución de frecuencias del crecimiento interanual del PBI (%)**
 
 {{frec_pib}}
 
@@ -485,13 +485,13 @@ En perspectiva, el crecimiento interanual promedio de toda la muestra ({{g_pib_T
 
 ![Inversión](figuras/{{fig_ibif}})
 
-**Figura 2.#. Inversión: variación interanual del trimestre por gobierno.**
+**Figura #. Inversión: variación interanual del trimestre por gobierno.**
 
-**Tabla 2.#. Estadística descriptiva del crecimiento interanual de la inversión (%)**
+**Tabla #. Estadística descriptiva del crecimiento interanual de la inversión (%)**
 
 {{desc_g_ibif}}
 
-**Tabla 2.#. Distribución de frecuencias del crecimiento interanual de la inversión (%)**
+**Tabla #. Distribución de frecuencias del crecimiento interanual de la inversión (%)**
 
 {{frec_ibif}}
 
@@ -513,13 +513,13 @@ La lectura económica es que la estabilización no se tradujo todavía en un aum
 
 ![Tasa de inversión](figuras/{{fig_tasa_inv}})
 
-**Figura 2.#. Tasa de inversión (% del PBI, precios corrientes) por gobierno.**
+**Figura #. Tasa de inversión (% del PBI, precios corrientes) por gobierno.**
 
-**Tabla 2.#. Estadística descriptiva de la tasa de inversión (% del PBI)**
+**Tabla #. Estadística descriptiva de la tasa de inversión (% del PBI)**
 
 {{desc_tasa_inv}}
 
-**Tabla 2.#. Distribución de frecuencias de la tasa de inversión (% del PBI)**
+**Tabla #. Distribución de frecuencias de la tasa de inversión (% del PBI)**
 
 {{frec_tasa_inv}}
 
@@ -539,13 +539,13 @@ La tasa alta de fines del gobierno de Fernández está inflada por el precio rel
 
 ![Consumo privado](figuras/{{fig_consumo}})
 
-**Figura 2.#. Consumo privado: variación interanual del trimestre por gobierno.**
+**Figura #. Consumo privado: variación interanual del trimestre por gobierno.**
 
-**Tabla 2.#. Estadística descriptiva del crecimiento interanual del consumo privado (%)**
+**Tabla #. Estadística descriptiva del crecimiento interanual del consumo privado (%)**
 
 {{desc_g_consumo_privado}}
 
-**Tabla 2.#. Distribución de frecuencias del crecimiento interanual del consumo privado (%)**
+**Tabla #. Distribución de frecuencias del crecimiento interanual del consumo privado (%)**
 
 {{frec_consumo}}
 
@@ -565,19 +565,19 @@ La distribución de Macri es la única con media negativa ({{g_consumo_privado_M
 
 ![Consumo público](figuras/{{fig_cpub}})
 
-**Figura 2.#. Consumo público: variación interanual del trimestre por gobierno.**
+**Figura #. Consumo público: variación interanual del trimestre por gobierno.**
 
-**Tabla 2.#. Estadística descriptiva del crecimiento interanual del consumo público (%)**
+**Tabla #. Estadística descriptiva del crecimiento interanual del consumo público (%)**
 
 {{desc_g_consumo_publico}}
 
-**Tabla 2.#. Distribución de frecuencias del crecimiento interanual del consumo público (%)**
+**Tabla #. Distribución de frecuencias del crecimiento interanual del consumo público (%)**
 
 {{frec_cpub}}
 
 El consumo público cae en promedio con Macri ({{g_consumo_publico_Macri_media}}%) y con Milei ({{g_consumo_publico_Milei_media}}%) y crece con Fernández ({{g_consumo_publico_Fernández_media}}%): es la variable de cuentas nacionales que mejor separa a los gobiernos con programas de ajuste de los expansivos. Con Milei la distribución es la más compacta (desvío de {{g_consumo_publico_Milei_desvio}}, curtosis de {{g_consumo_publico_Milei_curt}}): caídas de 4% a 5% en la primera mitad de 2024, estabilidad en 2025 y una nueva caída de 4,1% en el segundo trimestre de 2026.
 
-Que la caída del consumo público sea moderada comparada con la del gasto primario nacional (que cae alrededor de 26% real entre 2023 y 2025, ver 2.4.4) tiene una explicación de composición: el consumo público incluye a las provincias, que mantuvieron buena parte de su gasto, y no incluye las transferencias, que fueron el centro del ajuste nacional (obra pública, subsidios energéticos, transferencias a provincias).
+Que la caída del consumo público sea moderada comparada con la del gasto primario nacional (que cae alrededor de 26% real entre 2023 y 2025, ver 4.4) tiene una explicación de composición: el consumo público incluye a las provincias, que mantuvieron buena parte de su gasto, y no incluye las transferencias, que fueron el centro del ajuste nacional (obra pública, subsidios energéticos, transferencias a provincias).
 
 #### Exportaciones
 
@@ -591,13 +591,13 @@ Que la caída del consumo público sea moderada comparada con la del gasto prima
 
 ![Exportaciones](figuras/{{fig_expo}})
 
-**Figura 2.#. Exportaciones: variación interanual del trimestre por gobierno.**
+**Figura #. Exportaciones: variación interanual del trimestre por gobierno.**
 
-**Tabla 2.#. Estadística descriptiva del crecimiento interanual de las exportaciones (%)**
+**Tabla #. Estadística descriptiva del crecimiento interanual de las exportaciones (%)**
 
 {{desc_g_exportaciones}}
 
-**Tabla 2.#. Distribución de frecuencias del crecimiento interanual de las exportaciones (%)**
+**Tabla #. Distribución de frecuencias del crecimiento interanual de las exportaciones (%)**
 
 {{frec_expo}}
 
@@ -617,13 +617,13 @@ Dos factores explican la mayor parte de esa diferencia y ninguno es enteramente 
 
 ![Importaciones](figuras/{{fig_impo}})
 
-**Figura 2.#. Importaciones: variación interanual del trimestre por gobierno.**
+**Figura #. Importaciones: variación interanual del trimestre por gobierno.**
 
-**Tabla 2.#. Estadística descriptiva del crecimiento interanual de las importaciones (%)**
+**Tabla #. Estadística descriptiva del crecimiento interanual de las importaciones (%)**
 
 {{desc_g_importaciones}}
 
-**Tabla 2.#. Distribución de frecuencias del crecimiento interanual de las importaciones (%)**
+**Tabla #. Distribución de frecuencias del crecimiento interanual de las importaciones (%)**
 
 {{frec_impo}}
 
@@ -637,19 +637,19 @@ El EMAE y el PBI esconden comportamientos sectoriales muy distintos. La tabla y 
 
 *Fuente.* INDEC, valor agregado bruto por sector a precios de 2004, cuentas nacionales trimestrales (13 sectores, ids `11.2_*` en el script).
 
-**Tabla 2.#. Crecimiento por sector y gobierno**
+**Tabla #. Crecimiento por sector y gobierno**
 
 {{tabla_sectores}}
 
 ![Sectores](figuras/B04_sectores.png)
 
-**Figura 2.#.** El crecimiento de Milei es **angosto**: se concentra en cinco sectores. El agro está {{sec_agro}}% por encima de 2023 (con un crecimiento interanual promedio de {{sec_agro_Milei}}%), la minería y el petróleo {{sec_mineria_y_petroleo}}%, la intermediación financiera {{sec_intermediacion_financiera}}%, hoteles y restaurantes {{sec_hoteles_y_restaurantes}}% y la pesca {{sec_pesca}}%. En el otro extremo, la construcción cambia {{sec_construccion}}% respecto de 2023, la industria {{sec_industria}}%, el comercio {{sec_comercio}}% y la administración pública {{sec_administracion_publica}}%.
+**Figura #.** El crecimiento de Milei es **angosto**: se concentra en cinco sectores. El agro está {{sec_agro}}% por encima de 2023 (con un crecimiento interanual promedio de {{sec_agro_Milei}}%), la minería y el petróleo {{sec_mineria_y_petroleo}}%, la intermediación financiera {{sec_intermediacion_financiera}}%, hoteles y restaurantes {{sec_hoteles_y_restaurantes}}% y la pesca {{sec_pesca}}%. En el otro extremo, la construcción cambia {{sec_construccion}}% respecto de 2023, la industria {{sec_industria}}%, el comercio {{sec_comercio}}% y la administración pública {{sec_administracion_publica}}%.
 
-Cada número tiene una explicación distinta. El agro compara con la sequía de 2023, de modo que su salto es más recuperación que crecimiento. La minería y el petróleo reflejan Vaca Muerta. La intermediación financiera crece por la remonetización y la vuelta del crédito con la desinflación, desde niveles muy bajos. La construcción cae por el fin de la obra pública (ver la composición del gasto) y la industria por la combinación de recesión de 2024, apertura importadora y dólar apreciado, que golpeó a los sectores que compiten con importaciones. Los sectores que más crecen son intensivos en capital y en recursos naturales y emplean relativamente poca gente; los que caen (construcción, industria, comercio) son los grandes empleadores. Esa es una de las razones por las que el crecimiento del PBI no se tradujo en una baja de la desocupación (sección 2.4.7).
+Cada número tiene una explicación distinta. El agro compara con la sequía de 2023, de modo que su salto es más recuperación que crecimiento. La minería y el petróleo reflejan Vaca Muerta. La intermediación financiera crece por la remonetización y la vuelta del crédito con la desinflación, desde niveles muy bajos. La construcción cae por el fin de la obra pública (ver la composición del gasto) y la industria por la combinación de recesión de 2024, apertura importadora y dólar apreciado, que golpeó a los sectores que compiten con importaciones. Los sectores que más crecen son intensivos en capital y en recursos naturales y emplean relativamente poca gente; los que caen (construcción, industria, comercio) son los grandes empleadores. Esa es una de las razones por las que el crecimiento del PBI no se tradujo en una baja de la desocupación (sección 4.7).
 
 Con Macri, los sectores ganadores eran los mismos recursos naturales (agro y pesca) y la construcción, con la obra pública de 2017; con Fernández, después de la pandemia, crecieron sobre todo los servicios (hoteles y restaurantes, comercio) y la construcción, mientras que el agro cayó por la sequía.
 
-### 2.4.4 Cuentas fiscales
+### 4.4 Cuentas fiscales
 
 Todas las variables fiscales son del Sector Público Nacional no financiero, en base caja, del Informe Mensual de Ingresos y Gastos (IMIG) de la Secretaría de Hacienda. Los flujos se expresan como **suma de 12 meses sobre el PBI nominal** de los cuatro trimestres correspondientes (en los dos últimos meses, sin PBI publicado, se usa el último disponible), lo que elimina la fuerte estacionalidad mensual (aguinaldos en junio y diciembre) y permite comparar años con inflaciones muy distintas. Una consecuencia de esa suma móvil es que **los primeros once meses de Milei contienen meses del gobierno anterior**: el resultado de diciembre de 2023 es, en realidad, el de todo 2023.
 
@@ -665,21 +665,21 @@ Todas las variables fiscales son del Sector Público Nacional no financiero, en 
 
 ![Gasto primario](figuras/{{fig_gasto}})
 
-**Figura 2.#. Gasto primario: % del PBI (arriba) y distribución de su variación real interanual por gobierno.**
+**Figura #. Gasto primario: % del PBI (arriba) y distribución de su variación real interanual por gobierno.**
 
-**Tabla 2.#. Estadística descriptiva de la variación real interanual del gasto primario (%)**
+**Tabla #. Estadística descriptiva de la variación real interanual del gasto primario (%)**
 
 {{desc_d_gasto_real}}
 
-**Tabla 2.#. Estadística descriptiva del gasto primario (% del PBI, 12 meses)**
+**Tabla #. Estadística descriptiva del gasto primario (% del PBI, 12 meses)**
 
 {{desc_gasto_pib}}
 
-**Tabla 2.#. Distribución de frecuencias de la variación real interanual del gasto primario (%)**
+**Tabla #. Distribución de frecuencias de la variación real interanual del gasto primario (%)**
 
 {{frec_gasto}}
 
-El gasto primario promedio pasa de alrededor de 20% del PBI con Macri ({{gasto_pib_Macri_media}}%) y Fernández ({{gasto_pib_Fernández_media}}%) a {{gasto_pib_Milei_media}}% con Milei: más de cinco puntos del producto, el cambio de nivel más grande del capítulo. Las tres distribuciones del nivel prácticamente no se superponen: el máximo de Milei ({{gasto_pib_Milei_max}}%, que es diciembre de 2023 y por lo tanto el gasto de todo 2023) apenas toca los mínimos de los gobiernos anteriores, y desde mediados de 2024 la serie oscila entre 13,6% y 14,7%, los valores más bajos de la década. La asimetría ({{gasto_pib_Milei_asim}}) y la curtosis ({{gasto_pib_Milei_curt}}) de Milei las produce justamente ese primer tramo de transición.
+El gasto primario promedio pasa de alrededor de 20% del PBI con Macri ({{gasto_pib_Macri_media}}%) y Fernández ({{gasto_pib_Fernández_media}}%) a {{gasto_pib_Milei_media}}% con Milei: más de cinco puntos del producto, el cambio de nivel más grande de todo el análisis. Las tres distribuciones del nivel prácticamente no se superponen: el máximo de Milei ({{gasto_pib_Milei_max}}%, que es diciembre de 2023 y por lo tanto el gasto de todo 2023) apenas toca los mínimos de los gobiernos anteriores, y desde mediados de 2024 la serie oscila entre 13,6% y 14,7%, los valores más bajos de la década. La asimetría ({{gasto_pib_Milei_asim}}) y la curtosis ({{gasto_pib_Milei_curt}}) de Milei las produce justamente ese primer tramo de transición.
 
 En variaciones reales, las medias de Macri ({{d_gasto_real_Macri_media}}%) y de Milei ({{d_gasto_real_Milei_media}}%) son parecidas: los dos son gobiernos de ajuste del gasto. La diferencia está en la forma y la intensidad. Con Macri el ajuste fue gradual y sostenido (desvío de {{d_gasto_real_Macri_desvio}} puntos, el {{gasto_Macri_moda_fr}}% de los meses en {{gasto_Macri_moda}}); con Milei fue un shock concentrado: variaciones de hasta {{d_gasto_real_Milei_min}}% interanual en enero de 2024 y luego, por efecto base, subas de hasta {{d_gasto_real_Milei_max}}% en 2025 contra los meses más bajos de 2024. Por eso Milei tiene el mayor desvío ({{d_gasto_real_Milei_desvio}}) y una mediana ({{d_gasto_real_Milei_mediana}}%) más alta que la media. Fernández es el único gobierno con gasto real creciente en promedio ({{d_gasto_real_Fernández_media}}%), con un máximo de {{d_gasto_real_Fernández_max}}% en mayo de 2020 por los programas de la pandemia (IFE, ATP).
 
@@ -697,17 +697,17 @@ La comparación en % del PBI es más informativa que la de tasas, porque el PBI 
 
 ![Ingresos](figuras/{{fig_ingresos}})
 
-**Figura 2.#. Ingresos primarios: % del PBI (arriba) y distribución de su variación real interanual por gobierno.**
+**Figura #. Ingresos primarios: % del PBI (arriba) y distribución de su variación real interanual por gobierno.**
 
-**Tabla 2.#. Estadística descriptiva de la variación real interanual de los ingresos primarios (%)**
+**Tabla #. Estadística descriptiva de la variación real interanual de los ingresos primarios (%)**
 
 {{desc_d_ing_real}}
 
-**Tabla 2.#. Estadística descriptiva de los ingresos primarios (% del PBI, 12 meses)**
+**Tabla #. Estadística descriptiva de los ingresos primarios (% del PBI, 12 meses)**
 
 {{desc_ing_pib}}
 
-**Tabla 2.#. Distribución de frecuencias de la variación real interanual de los ingresos primarios (%)**
+**Tabla #. Distribución de frecuencias de la variación real interanual de los ingresos primarios (%)**
 
 {{frec_ingresos}}
 
@@ -729,13 +729,13 @@ Que el superávit se haya logrado con ingresos en baja confirma que el ajuste fu
 
 ![Resultado primario](figuras/{{fig_res_primario}})
 
-**Figura 2.#. Resultado primario (% del PBI, 12 meses) por gobierno.**
+**Figura #. Resultado primario (% del PBI, 12 meses) por gobierno.**
 
-**Tabla 2.#. Estadística descriptiva del resultado primario (% del PBI)**
+**Tabla #. Estadística descriptiva del resultado primario (% del PBI)**
 
 {{desc_res_primario}}
 
-**Tabla 2.#. Distribución de frecuencias del resultado primario (% del PBI)**
+**Tabla #. Distribución de frecuencias del resultado primario (% del PBI)**
 
 {{frec_res_primario}}
 
@@ -743,7 +743,7 @@ El resultado primario medio cambia de signo: {{res_primario_Macri_media}}% con M
 
 Las trayectorias dentro de cada gobierno también son distintas. Con Macri el déficit primario se achica de manera continua (de {{res_primario_Macri_min}}% a {{res_primario_Macri_max}}%), con el acuerdo con el FMI de 2018 como acelerador. Con Fernández el déficit salta a {{res_primario_Fernández_min}}% en la pandemia (diciembre de 2020) y luego se estabiliza alrededor de −2% a −3%. Con Milei el resultado pasa de −2,7% a superávit en mayo de 2024 (el primer valor positivo de la serie, en términos de 12 meses), llega a {{res_primario_Milei_max}}% en diciembre de 2024 y se mantiene entre 1,1% y 1,8% desde entonces.
 
-Es el resultado más claro del programa y el que, según el propio gobierno, explica la desinflación: sin déficit que financiar, el Tesoro dejó de pedirle pesos al Banco Central. La correlación entre resultado primario e inflación del análisis bivariado (sección 2.6) es negativa con Milei, aunque, como se discute allí, en parte es el reflejo de dos tendencias simultáneas.
+Es el resultado más claro del programa y el que, según el propio gobierno, explica la desinflación: sin déficit que financiar, el Tesoro dejó de pedirle pesos al Banco Central. La correlación entre resultado primario e inflación del análisis bivariado (sección 6) es negativa con Milei, aunque, como se discute allí, en parte es el reflejo de dos tendencias simultáneas.
 
 #### Resultado financiero
 
@@ -757,13 +757,13 @@ Es el resultado más claro del programa y el que, según el propio gobierno, exp
 
 ![Resultado financiero](figuras/{{fig_res_financiero}})
 
-**Figura 2.#. Resultado financiero (% del PBI, 12 meses) por gobierno.**
+**Figura #. Resultado financiero (% del PBI, 12 meses) por gobierno.**
 
-**Tabla 2.#. Estadística descriptiva del resultado financiero (% del PBI)**
+**Tabla #. Estadística descriptiva del resultado financiero (% del PBI)**
 
 {{desc_res_financiero}}
 
-**Tabla 2.#. Distribución de frecuencias del resultado financiero (% del PBI)**
+**Tabla #. Distribución de frecuencias del resultado financiero (% del PBI)**
 
 {{frec_res_financiero}}
 
@@ -783,13 +783,13 @@ Milei es el único gobierno de la muestra con meses de superávit financiero: el
 
 ![Intereses](figuras/{{fig_intereses}})
 
-**Figura 2.#. Intereses de la deuda (% del PBI, 12 meses) por gobierno.**
+**Figura #. Intereses de la deuda (% del PBI, 12 meses) por gobierno.**
 
-**Tabla 2.#. Estadística descriptiva de los intereses de la deuda (% del PBI)**
+**Tabla #. Estadística descriptiva de los intereses de la deuda (% del PBI)**
 
 {{desc_intereses_pib}}
 
-**Tabla 2.#. Distribución de frecuencias de los intereses de la deuda (% del PBI)**
+**Tabla #. Distribución de frecuencias de los intereses de la deuda (% del PBI)**
 
 {{frec_intereses}}
 
@@ -809,17 +809,17 @@ Parte de esa baja es contable: la deuda en pesos se refinanció con Lecaps cuyos
 
 ![Jubilaciones](figuras/{{fig_jubilaciones}})
 
-**Figura 2.#. Gasto en jubilaciones: % del PBI (arriba) y distribución de su variación real interanual por gobierno.**
+**Figura #. Gasto en jubilaciones: % del PBI (arriba) y distribución de su variación real interanual por gobierno.**
 
-**Tabla 2.#. Estadística descriptiva de la variación real interanual del gasto en jubilaciones (%)**
+**Tabla #. Estadística descriptiva de la variación real interanual del gasto en jubilaciones (%)**
 
 {{desc_d_jub_real}}
 
-**Tabla 2.#. Estadística descriptiva del gasto en jubilaciones (% del PBI, 12 meses)**
+**Tabla #. Estadística descriptiva del gasto en jubilaciones (% del PBI, 12 meses)**
 
 {{desc_jub_pib}}
 
-**Tabla 2.#. Distribución de frecuencias de la variación real interanual del gasto en jubilaciones (%)**
+**Tabla #. Distribución de frecuencias de la variación real interanual del gasto en jubilaciones (%)**
 
 {{frec_jubilaciones}}
 
@@ -841,43 +841,43 @@ La paradoja aparente es que las jubilaciones pasaron de un tercio a 44% del gast
 
 ![Subsidios a la energía](figuras/{{fig_sub_energia}})
 
-**Figura 2.#. Subsidios a la energía (% del PBI del trimestre) por gobierno.**
+**Figura #. Subsidios a la energía (% del PBI del trimestre) por gobierno.**
 
-**Tabla 2.#. Estadística descriptiva de los subsidios a la energía (% del PBI del trimestre)**
+**Tabla #. Estadística descriptiva de los subsidios a la energía (% del PBI del trimestre)**
 
 {{desc_sub_energia_pib}}
 
-**Tabla 2.#. Distribución de frecuencias de los subsidios a la energía (% del PBI del trimestre)**
+**Tabla #. Distribución de frecuencias de los subsidios a la energía (% del PBI del trimestre)**
 
 {{frec_sub_energia}}
 
 Los subsidios energéticos son el rubro con la caída más clara: de {{sub_energia_pib_Fernández_media}}% del PBI por trimestre con Fernández a {{sub_energia_pib_Milei_media}}% con Milei, menos de la mitad. La clase modal de Milei ({{sub_energia_Milei_moda}}) está una clase por debajo de la de los otros dos gobiernos ({{sub_energia_Fernández_moda}}), y su máximo ({{sub_energia_pib_Milei_max}}%) es apenas superior a la mediana de Macri.
 
-Macri tiene la distribución más asimétrica ({{sub_energia_pib_Macri_asim}}) porque arranca con los subsidios heredados de 2015 (hasta {{sub_energia_pib_Macri_max}}% en el cuarto trimestre de 2016) y los reduce con los aumentos de tarifas de 2016-2018: un proceso muy parecido al de Milei, que se revirtió con Fernández, cuando el congelamiento de tarifas y la suba del precio internacional del gas en 2022 los llevaron de nuevo a 2% a 3% del PBI trimestral. La comparación con el precio relativo de los regulados (sección 2.4.1) cierra el círculo: los dos gobiernos que subieron tarifas por encima de la inflación bajaron subsidios, y el que las congeló los subió.
+Macri tiene la distribución más asimétrica ({{sub_energia_pib_Macri_asim}}) porque arranca con los subsidios heredados de 2015 (hasta {{sub_energia_pib_Macri_max}}% en el cuarto trimestre de 2016) y los reduce con los aumentos de tarifas de 2016-2018: un proceso muy parecido al de Milei, que se revirtió con Fernández, cuando el congelamiento de tarifas y la suba del precio internacional del gas en 2022 los llevaron de nuevo a 2% a 3% del PBI trimestral. La comparación con el precio relativo de los regulados (sección 4.1) cierra el círculo: los dos gobiernos que subieron tarifas por encima de la inflación bajaron subsidios, y el que las congeló los subió.
 
 #### Composición del gasto y de la demanda (tortas)
 
 Para ver la composición del gasto se usa el gasto de cada año completo en pesos corrientes: las participaciones no necesitan deflactarse, porque numerador y denominador están en la misma moneda del mismo año.
 
-**Tabla 2.#. Estructura del gasto primario, 2023 y 2025 (% del total)**
+**Tabla #. Estructura del gasto primario, 2023 y 2025 (% del total)**
 
 {{tabla_gasto}}
 
 ![Tortas del gasto](figuras/D07_tortas_gasto.png)
 
-**Figura 2.#.** La composición del gasto cambió más que en cualquier otro momento de la serie. Las jubilaciones pasaron de un tercio a 44% del gasto primario y las asignaciones (AUH y familiares) de 4,4% a 7,4%. Esto **no** significa que se gastara más en jubilaciones: su gasto real cayó 4% entre 2023 y 2025 (ver `estudio/results.md`), pero el total cayó 26% y los rubros que más se recortaron (obra pública, de 6,1% a 1,6% del gasto; subsidios a la energía, de 8,3% a 4,8%) dejaron más espacio relativo a las prestaciones sociales. Es un buen ejemplo de por qué una torta debe leerse junto con el tamaño del total: una porción más grande de una torta más chica puede ser un monto menor.
+**Figura #.** La composición del gasto cambió más que en cualquier otro momento de la serie. Las jubilaciones pasaron de un tercio a 44% del gasto primario y las asignaciones (AUH y familiares) de 4,4% a 7,4%. Esto **no** significa que se gastara más en jubilaciones: su gasto real cayó 4% entre 2023 y 2025 (ver `estudio/results.md`), pero el total cayó 26% y los rubros que más se recortaron (obra pública, de 6,1% a 1,6% del gasto; subsidios a la energía, de 8,3% a 4,8%) dejaron más espacio relativo a las prestaciones sociales. Es un buen ejemplo de por qué una torta debe leerse junto con el tamaño del total: una porción más grande de una torta más chica puede ser un monto menor.
 
 Para el PBI por componente se usan las cuentas nacionales a precios corrientes. Una torta necesita partes positivas que sumen el total, y el PBI no cumple eso por el lado de la demanda (las importaciones restan); por eso se grafica la composición de la demanda final, C + G + I + X, y las importaciones se informan aparte. Las exportaciones a precios corrientes se obtienen por identidad (demanda global menos el resto de sus componentes), porque esa serie viene vacía en la API.
 
-**Tabla 2.#. Componentes de la demanda (% del PBI, precios corrientes)**
+**Tabla #. Componentes de la demanda (% del PBI, precios corrientes)**
 
 {{tabla_demanda}}
 
 ![Tortas de la demanda](figuras/D08_tortas_demanda.png)
 
-**Figura 2.#.** Entre 2023 y 2025 crece el peso del consumo privado (de 65,8% a 70,8% del PBI) y de las exportaciones (de 12,7% a 15,5%, por la normalización de la cosecha después de la sequía y por Vaca Muerta), y bajan el consumo público (de 16,2% a 15,3%) y la inversión (de 18,4% a 16,6%). Las importaciones también suben (de 13,7% a 14,8%), en línea con la apertura comercial. La caída del consumo público en el PBI es la contraparte, en las cuentas nacionales, del ajuste fiscal de esta sección.
+**Figura #.** Entre 2023 y 2025 crece el peso del consumo privado (de 65,8% a 70,8% del PBI) y de las exportaciones (de 12,7% a 15,5%, por la normalización de la cosecha después de la sequía y por Vaca Muerta), y bajan el consumo público (de 16,2% a 15,3%) y la inversión (de 18,4% a 16,6%). Las importaciones también suben (de 13,7% a 14,8%), en línea con la apertura comercial. La caída del consumo público en el PBI es la contraparte, en las cuentas nacionales, del ajuste fiscal de esta sección.
 
-### 2.4.5 Tipo de cambio y reservas
+### 4.5 Tipo de cambio y reservas
 
 #### Dólar oficial: depreciación mensual y tipo de cambio real
 
@@ -885,27 +885,27 @@ Para el PBI por componente se usan las cuentas nacionales a precios corrientes. 
 
 *Fuente y período.* BCRA (API de Estadísticas Monetarias v4, variable 5), diciembre de 2015 a octubre de 2026; IPC del INDEC para el tipo de cambio real. Mensual.
 
-*Por qué se eligió.* La devaluación del 13/12/2023 (118% en un día) y la salida del cepo del 14/4/2025 son los dos eventos cambiarios centrales del período; el tipo de cambio es además el principal canal de traspaso a precios (sección 2.6) y el precio que define la competitividad de los sectores transables.
+*Por qué se eligió.* La devaluación del 13/12/2023 (118% en un día) y la salida del cepo del 14/4/2025 son los dos eventos cambiarios centrales del período; el tipo de cambio es además el principal canal de traspaso a precios (sección 6) y el precio que define la competitividad de los sectores transables.
 
 *Limitaciones.* El tipo de cambio real no descuenta la inflación de Estados Unidos (alrededor de 3% anual) y es bilateral, no multilateral. El promedio mensual reparte un salto discreto entre dos meses: la devaluación de diciembre de 2023 aparece como +81% en diciembre y el resto en enero.
 
 ![Dólar oficial](figuras/{{fig_dolar}})
 
-**Figura 2.#. Tipo de cambio real oficial (arriba) y distribución de la depreciación mensual por gobierno.**
+**Figura #. Tipo de cambio real oficial (arriba) y distribución de la depreciación mensual por gobierno.**
 
-**Tabla 2.#. Estadística descriptiva de la depreciación mensual del dólar oficial (%)**
+**Tabla #. Estadística descriptiva de la depreciación mensual del dólar oficial (%)**
 
 {{desc_dep_oficial}}
 
-**Tabla 2.#. Estadística descriptiva del tipo de cambio real oficial (nov-2023 = 100)**
+**Tabla #. Estadística descriptiva del tipo de cambio real oficial (nov-2023 = 100)**
 
 {{desc_tcr}}
 
-**Tabla 2.#. Distribución de frecuencias de la depreciación mensual del dólar oficial (%)**
+**Tabla #. Distribución de frecuencias de la depreciación mensual del dólar oficial (%)**
 
 {{frec_dolar}}
 
-La depreciación mensual mediana es casi igual con Macri ({{dep_oficial_Macri_mediana}}%) y con Milei ({{dep_oficial_Milei_mediana}}%) y más alta con Fernández ({{dep_oficial_Fernández_mediana}}%), pero Milei tiene la distribución más extrema de todo el capítulo: asimetría de {{dep_oficial_Milei_asim}} y curtosis de {{dep_oficial_Milei_curt}}, por un único salto ({{dep_oficial_Milei_max}}% en diciembre de 2023) seguido de un crawling peg de 2% mensual hasta abril de 2025 y de una flotación entre bandas desde entonces. La tabla de frecuencias muestra que el {{dolar_Milei_moda_fr}}% de los meses de Milei está en {{dolar_Milei_moda}}, la concentración más alta de los tres gobiernos. Es el tipo de variable donde la media y el desvío describen mal el proceso: lo que hay es un régimen con un salto discreto.
+La depreciación mensual mediana es casi igual con Macri ({{dep_oficial_Macri_mediana}}%) y con Milei ({{dep_oficial_Milei_mediana}}%) y más alta con Fernández ({{dep_oficial_Fernández_mediana}}%), pero Milei tiene la distribución más extrema de todo el análisis: asimetría de {{dep_oficial_Milei_asim}} y curtosis de {{dep_oficial_Milei_curt}}, por un único salto ({{dep_oficial_Milei_max}}% en diciembre de 2023) seguido de un crawling peg de 2% mensual hasta abril de 2025 y de una flotación entre bandas desde entonces. La tabla de frecuencias muestra que el {{dolar_Milei_moda_fr}}% de los meses de Milei está en {{dolar_Milei_moda}}, la concentración más alta de los tres gobiernos. Es el tipo de variable donde la media y el desvío describen mal el proceso: lo que hay es un régimen con un salto discreto.
 
 Los regímenes cambiarios de los gobiernos anteriores dejan huellas igual de nítidas. Con Macri, que tuvo tipo de cambio flotante, el {{dolar_Macri_moda_fr}}% de los meses cae en la clase modal y más de un cuarto de los meses tiene depreciación **negativa** (el peso se apreció): es la distribución más dispersa en el cuerpo, con las crisis de 2018 (+28,1% en septiembre) y 2019 en la cola. Con Fernández no hay ningún mes negativo: con cepo y un crawling peg administrado, el oficial subió todos los meses, con un salto de {{dep_oficial_Fernández_max}}% después de las PASO de agosto de 2023.
 
@@ -923,13 +923,13 @@ En tipo de cambio real, el promedio de Milei ({{tcr_Milei_media}}) es el más ba
 
 ![Brecha](figuras/{{fig_brecha}})
 
-**Figura 2.#. Brecha cambiaria (CCL sobre oficial, %) por gobierno.**
+**Figura #. Brecha cambiaria (CCL sobre oficial, %) por gobierno.**
 
-**Tabla 2.#. Estadística descriptiva de la brecha cambiaria (%)**
+**Tabla #. Estadística descriptiva de la brecha cambiaria (%)**
 
 {{desc_brecha}}
 
-**Tabla 2.#. Distribución de frecuencias de la brecha cambiaria (%)**
+**Tabla #. Distribución de frecuencias de la brecha cambiaria (%)**
 
 {{frec_brecha}}
 
@@ -937,7 +937,7 @@ La brecha separa a los tres gobiernos como pocas variables. Con Macri, sin cepo 
 
 Con Milei la brecha cae de {{brecha_Milei_max}}% en diciembre de 2023 (con el oficial ya devaluado) a menos de 20% en pocos meses, se mantiene en un rango de 10% a 50% durante 2024 mientras rige el cepo con el "dólar blend" (que liquidaba el 20% de las exportaciones al CCL), y prácticamente desaparece con la salida del cepo de abril de 2025 (mínimo de {{brecha_Milei_min}}% en agosto de 2025). La media ({{brecha_Milei_media}}%) y la mediana ({{brecha_Milei_mediana}}%) están muy separadas porque la distribución mezcla los dos regímenes.
 
-La correlación entre brecha e inflación es alta con Fernández y con Milei (sección 2.6), lo que es coherente con la idea de que la brecha anticipa la devaluación del oficial y, con ella, la inflación; pero con Milei la brecha y la inflación también bajaron juntas por motivos comunes (estabilización, superávit fiscal), así que la correlación no prueba una causalidad.
+La correlación entre brecha e inflación es alta con Fernández y con Milei (sección 6), lo que es coherente con la idea de que la brecha anticipa la devaluación del oficial y, con ella, la inflación; pero con Milei la brecha y la inflación también bajaron juntas por motivos comunes (estabilización, superávit fiscal), así que la correlación no prueba una causalidad.
 
 #### Reservas internacionales
 
@@ -951,17 +951,17 @@ La correlación entre brecha e inflación es alta con Fernández y con Milei (se
 
 ![Reservas](figuras/{{fig_reservas}})
 
-**Figura 2.#. Reservas brutas del BCRA (arriba) y distribución de su variación mensual por gobierno.**
+**Figura #. Reservas brutas del BCRA (arriba) y distribución de su variación mensual por gobierno.**
 
-**Tabla 2.#. Estadística descriptiva de la variación mensual de las reservas (%)**
+**Tabla #. Estadística descriptiva de la variación mensual de las reservas (%)**
 
 {{desc_d_reservas}}
 
-**Tabla 2.#. Estadística descriptiva de las reservas brutas (miles de millones de US$)**
+**Tabla #. Estadística descriptiva de las reservas brutas (miles de millones de US$)**
 
 {{desc_reservas_m}}
 
-**Tabla 2.#. Distribución de frecuencias de la variación mensual de las reservas (%)**
+**Tabla #. Distribución de frecuencias de la variación mensual de las reservas (%)**
 
 {{frec_reservas}}
 
@@ -971,7 +971,7 @@ La variación mensual media es positiva con Macri ({{d_reservas_Macri_media}}%) 
 
 Es importante no leer el aumento de las reservas brutas como una mejora equivalente de la solvencia externa: buena parte del aumento de 2025-2026 es deuda (FMI, repos, colocaciones del Tesoro), no compras de divisas del BCRA en el mercado.
 
-### 2.4.6 Mercados
+### 4.6 Mercados
 
 #### Riesgo país
 
@@ -985,13 +985,13 @@ Es importante no leer el aumento de las reservas brutas como una mejora equivale
 
 ![Riesgo país](figuras/{{fig_riesgo_pais}})
 
-**Figura 2.#. Riesgo país (puntos básicos, escala logarítmica) por gobierno.**
+**Figura #. Riesgo país (puntos básicos, escala logarítmica) por gobierno.**
 
-**Tabla 2.#. Estadística descriptiva del riesgo país (puntos básicos)**
+**Tabla #. Estadística descriptiva del riesgo país (puntos básicos)**
 
 {{desc_riesgo_pais}}
 
-**Tabla 2.#. Distribución de frecuencias del riesgo país (puntos básicos)**
+**Tabla #. Distribución de frecuencias del riesgo país (puntos básicos)**
 
 {{frec_riesgo_pais}}
 
@@ -1013,21 +1013,21 @@ La trayectoria con Milei: de alrededor de 1.900 pb al asumir a un mínimo de {{r
 
 ![ADRs](figuras/{{fig_adr}})
 
-**Figura 2.#. Canasta de ADRs argentinos (arriba, escala logarítmica) y distribución del retorno diario por gobierno.**
+**Figura #. Canasta de ADRs argentinos (arriba, escala logarítmica) y distribución del retorno diario por gobierno.**
 
-**Tabla 2.#. Estadística descriptiva del retorno diario de la canasta de ADRs (%, logarítmico)**
+**Tabla #. Estadística descriptiva del retorno diario de la canasta de ADRs (%, logarítmico)**
 
 {{desc_r_adr}}
 
-**Tabla 2.#. Estadística descriptiva del nivel de la canasta de ADRs (2/1/2019 = 1)**
+**Tabla #. Estadística descriptiva del nivel de la canasta de ADRs (2/1/2019 = 1)**
 
 {{desc_adr_canasta}}
 
-**Tabla 2.#. Distribución de frecuencias del retorno diario de la canasta de ADRs (%)**
+**Tabla #. Distribución de frecuencias del retorno diario de la canasta de ADRs (%)**
 
 {{frec_adr}}
 
-Los retornos diarios tienen las colas más pesadas del capítulo. La curtosis de {{r_adr_Macri_curt}} de Macri la produce un solo día, el 12/8/2019, con −68,4% logarítmico (la canasta perdió la mitad de su valor en una sesión, la reacción a las PASO). Sin él, las curtosis de Fernández ({{r_adr_Fernández_curt}}) y de Milei ({{r_adr_Milei_curt}}) siguen lejos de la normal: con Milei, el peor día fue el 8/9/2025, después de la elección bonaerense ({{r_adr_Milei_min}}%), y el mejor el 27/10/2025, después de las legislativas (+{{r_adr_Milei_max}}%). Es la evidencia descriptiva de por qué los modelos de riesgo de mercado para activos argentinos usan distribuciones t de Student o volatilidad condicional (GARCH) en lugar de la normal.
+Los retornos diarios tienen las colas más pesadas de todo el análisis. La curtosis de {{r_adr_Macri_curt}} de Macri la produce un solo día, el 12/8/2019, con −68,4% logarítmico (la canasta perdió la mitad de su valor en una sesión, la reacción a las PASO). Sin él, las curtosis de Fernández ({{r_adr_Fernández_curt}}) y de Milei ({{r_adr_Milei_curt}}) siguen lejos de la normal: con Milei, el peor día fue el 8/9/2025, después de la elección bonaerense ({{r_adr_Milei_min}}%), y el mejor el 27/10/2025, después de las legislativas (+{{r_adr_Milei_max}}%). Es la evidencia descriptiva de por qué los modelos de riesgo de mercado para activos argentinos usan distribuciones t de Student o volatilidad condicional (GARCH) en lugar de la normal.
 
 La tabla de frecuencias muestra que, a diferencia de las variables macroeconómicas, las distribuciones de los tres gobiernos son muy parecidas en el cuerpo: la clase modal es {{adr_Milei_moda}} en los tres, con alrededor del 19% al 23% de los días, y la mediana diaria es prácticamente cero. Las diferencias de rendimiento acumulado entre gobiernos, enormes en niveles, surgen de diferencias de media diarias muy chicas ({{r_adr_Fernández_media}}% contra {{r_adr_Milei_media}}%) acumuladas durante cientos de días.
 
@@ -1045,17 +1045,17 @@ En niveles, la canasta promedia {{adr_canasta_Fernández_media}} con Fernández 
 
 ![Bonos](figuras/{{fig_bonos}})
 
-**Figura 2.#. Índice de retorno total de los Globales (arriba) y distribución del retorno diario por gobierno.**
+**Figura #. Índice de retorno total de los Globales (arriba) y distribución del retorno diario por gobierno.**
 
-**Tabla 2.#. Estadística descriptiva del retorno diario total de la cartera GD30/GD35/GD41 (%)**
+**Tabla #. Estadística descriptiva del retorno diario total de la cartera GD30/GD35/GD41 (%)**
 
 {{desc_r_bonos}}
 
-**Tabla 2.#. Estadística descriptiva del índice de retorno total (1/10/2021 = 100)**
+**Tabla #. Estadística descriptiva del índice de retorno total (1/10/2021 = 100)**
 
 {{desc_bonos_idx}}
 
-**Tabla 2.#. Distribución de frecuencias del retorno diario de los bonos (%)**
+**Tabla #. Distribución de frecuencias del retorno diario de los bonos (%)**
 
 {{frec_bonos}}
 
@@ -1065,7 +1065,7 @@ En niveles, el índice de retorno total pasa de alrededor de 104 en enero de 202
 
 La curtosis de Milei ({{r_bonos_Milei_curt}}) y su asimetría positiva ({{r_bonos_Milei_asim}}) las producen los días alrededor de los eventos de 2025: −9,0% el 8/9/2025, tras la elección bonaerense, y +16,4% el 22/9/2025, con el anuncio de apoyo financiero del Tesoro de Estados Unidos.
 
-### 2.4.7 Indicadores sociales
+### 4.7 Indicadores sociales
 
 #### Pobreza
 
@@ -1079,13 +1079,13 @@ La curtosis de Milei ({{r_bonos_Milei_curt}}) y su asimetría positiva ({{r_bono
 
 ![Pobreza](figuras/{{fig_pobreza}})
 
-**Figura 2.#. Pobreza (% de personas, semestral) por gobierno.**
+**Figura #. Pobreza (% de personas, semestral) por gobierno.**
 
-**Tabla 2.#. Estadística descriptiva de la pobreza (%)**
+**Tabla #. Estadística descriptiva de la pobreza (%)**
 
 {{desc_pobreza}}
 
-**Tabla 2.#. Distribución de frecuencias de la pobreza (%)**
+**Tabla #. Distribución de frecuencias de la pobreza (%)**
 
 {{frec_pobreza}}
 
@@ -1105,67 +1105,67 @@ El pico del primer semestre de 2024 es la consecuencia directa de la devaluació
 
 ![Desocupación](figuras/{{fig_desocupacion}})
 
-**Figura 2.#. Desocupación (% de la PEA, trimestral) por gobierno.**
+**Figura #. Desocupación (% de la PEA, trimestral) por gobierno.**
 
-**Tabla 2.#. Estadística descriptiva de la desocupación (%)**
+**Tabla #. Estadística descriptiva de la desocupación (%)**
 
 {{desc_desocupacion}}
 
-**Tabla 2.#. Distribución de frecuencias de la desocupación (%)**
+**Tabla #. Distribución de frecuencias de la desocupación (%)**
 
 {{frec_desocupacion}}
 
 La desocupación media con Milei ({{desocupacion_Milei_media}}%) es la más baja de los tres gobiernos (contra {{desocupacion_Macri_media}}% y {{desocupacion_Fernández_media}}%) y la menos dispersa (desvío de {{desocupacion_Milei_desvio}}): el {{desocupacion_Milei_moda_fr}}% de sus trimestres está en {{desocupacion_Milei_moda}}. Pero conviene leerla con cuidado. La de Fernández incluye el pico de la pandemia (13,1% en el segundo trimestre de 2020) y termina con el mínimo de la serie (5,7% en el cuarto trimestre de 2023); por eso su mediana ({{desocupacion_Fernández_mediana}}%) es más baja que la de Milei ({{desocupacion_Milei_mediana}}%) y su distribución es la más asimétrica.
 
-Comparando trimestres iguales, que es lo correcto para una serie estacional, la desocupación con Milei **subió**: de 6,2% en el segundo trimestre de 2023 a 7,6% en el de 2025 y 7,9% en el de 2026. Es coherente con la composición sectorial del crecimiento (sección 2.4.3): los sectores que crecieron emplean poca gente y los que cayeron, mucha.
+Comparando trimestres iguales, que es lo correcto para una serie estacional, la desocupación con Milei **subió**: de 6,2% en el segundo trimestre de 2023 a 7,6% en el de 2025 y 7,9% en el de 2026. Es coherente con la composición sectorial del crecimiento (sección 4.3): los sectores que crecieron emplean poca gente y los que cayeron, mucha.
 
-La relación entre desocupación y crecimiento (ley de Okun) y entre desocupación e inflación (curva de Phillips) se analiza en la sección 2.6.
+La relación entre desocupación y crecimiento (ley de Okun) y entre desocupación e inflación (curva de Phillips) se analiza en la sección 6.
 
-## 2.5 Comparación entre gobiernos
+## 5. Comparación entre gobiernos
 
 Esta sección junta las variables principales para comparar los tres gobiernos de un vistazo.
 
-### 2.5.1 Promedios por gobierno
+### 5.1 Promedios por gobierno
 
 ![Barras de promedios](figuras/D05_barras_promedios.png)
 
-**Figura 2.#.** Cada barra es la media del período y el segmento vertical, ± un error estándar (desvío / √N). Las barras resumen lo que ya mostraron las tablas: la mayor diferencia entre gobiernos está en el resultado fiscal; en la variación mensual del salario real privado los intervalos se superponen por completo; en el crecimiento del PBI los intervalos también se superponen. **Advertencia metodológica:** el error estándar así calculado supone observaciones independientes, y estas series son muy persistentes (ver la sección 2.7): los intervalos verdaderos son más anchos. Un test formal de diferencia de medias debería usar errores estándar robustos a autocorrelación (Newey-West), lo que se deja para el capítulo econométrico.
+**Figura #.** Cada barra es la media del período y el segmento vertical, ± un error estándar (desvío / √N). Las barras resumen lo que ya mostraron las tablas: la mayor diferencia entre gobiernos está en el resultado fiscal; en la variación mensual del salario real privado los intervalos se superponen por completo; en el crecimiento del PBI los intervalos también se superponen. **Advertencia metodológica:** el error estándar así calculado supone observaciones independientes, y estas series son muy persistentes (ver la sección 7): los intervalos verdaderos son más anchos. Un test formal de diferencia de medias debería usar errores estándar robustos a autocorrelación (Newey-West), lo que se deja para el modelo econométrico.
 
-### 2.5.2 Variación acumulada y anualizada
+### 5.2 Variación acumulada y anualizada
 
 La variación acumulada compara el último dato del gobierno anterior con el último dato del propio. Como los períodos tienen distinto largo (Milei lleva menos de tres años), se anualiza: (1 + variación acumulada)^(1/años) − 1. Las filas con asterisco no empiezan en el último dato del gobierno anterior porque la serie no existe antes (Macri).
 
-**Tabla 2.#. Variación acumulada y anualizada por gobierno**
+**Tabla #. Variación acumulada y anualizada por gobierno**
 
 {{tabla_variacion}}
 
 ![Barras de variación](figuras/D06_barras_variacion_por_gobierno.png)
 
-**Figura 2.#.** La inflación anualizada de Milei (69%) es menor que la de Fernández (79%) y mayor que la de Macri (38%, con sus primeros cinco meses fuera de la muestra), y está dominada por los primeros cuatro meses: anualizada, la inflación fue de 62% entre abril y diciembre de 2024, 31,5% en 2025 y 33% en los nueve meses de 2026. En términos reales, el patrón de Milei es el más heterogéneo: el salario no registrado sube 16,7% por año y el mínimo cae 16,9% por año; el salario público cae 6,3% anual, el privado registrado 1,3% (igual que con Fernández); el PBI crece 1,7% por año (el mejor de los tres) y la inversión cae 4% por año. El tipo de cambio real termina casi donde empezó (−1,3% anual) después de recorrer un salto de 50% y su reversión.
+**Figura #.** La inflación anualizada de Milei (69%) es menor que la de Fernández (79%) y mayor que la de Macri (38%, con sus primeros cinco meses fuera de la muestra), y está dominada por los primeros cuatro meses: anualizada, la inflación fue de 62% entre abril y diciembre de 2024, 31,5% en 2025 y 33% en los nueve meses de 2026. En términos reales, el patrón de Milei es el más heterogéneo: el salario no registrado sube 16,7% por año y el mínimo cae 16,9% por año; el salario público cae 6,3% anual, el privado registrado 1,3% (igual que con Fernández); el PBI crece 1,7% por año (el mejor de los tres) y la inversión cae 4% por año. El tipo de cambio real termina casi donde empezó (−1,3% anual) después de recorrer un salto de 50% y su reversión.
 
-### 2.5.3 Boxplots comparados
+### 5.3 Boxplots comparados
 
 ![Boxplots](figuras/D09_boxplots.png)
 
-**Figura 2.#.** Los diagramas de caja de las variables principales, uno al lado del otro, permiten comparar posición, dispersión y valores atípicos al mismo tiempo. En la inflación, la caja de Milei (rango intercuartil) es la más angosta y está a la altura de la de Macri, y los meses de diciembre de 2023 a marzo de 2024 aparecen como **atípicos** (más de 1,5 rangos intercuartiles por encima del tercer cuartil). En el resultado primario la caja de Milei no se superpone con ninguna de las anteriores: es la variable donde el cambio de régimen es visible incluso en la distribución completa. El riesgo país de Macri tiene una caja baja con muchos atípicos (los meses posteriores a las PASO); el de Milei tiene una caja alta, porque en su período el riesgo país bajó de 2.000 a 400 puntos y volvió a subir: una distribución con tendencia, no un nivel estable.
+**Figura #.** Los diagramas de caja de las variables principales, uno al lado del otro, permiten comparar posición, dispersión y valores atípicos al mismo tiempo. En la inflación, la caja de Milei (rango intercuartil) es la más angosta y está a la altura de la de Macri, y los meses de diciembre de 2023 a marzo de 2024 aparecen como **atípicos** (más de 1,5 rangos intercuartiles por encima del tercer cuartil). En el resultado primario la caja de Milei no se superpone con ninguna de las anteriores: es la variable donde el cambio de régimen es visible incluso en la distribución completa. El riesgo país de Macri tiene una caja baja con muchos atípicos (los meses posteriores a las PASO); el de Milei tiene una caja alta, porque en su período el riesgo país bajó de 2.000 a 400 puntos y volvió a subir: una distribución con tendencia, no un nivel estable.
 
-## 2.6 Análisis bivariado
+## 6. Análisis bivariado
 
-Las secciones anteriores describieron cada variable por separado. Esta sección mira cómo se mueven de a pares, con tres herramientas: una matriz de correlaciones por gobierno, una tabla de pares seleccionados con su significatividad y diagramas de dispersión. Ninguna de ellas mide causalidad: una correlación puede deberse a que una variable afecta a la otra, a que ambas responden a una tercera o, en series con tendencia, a que simplemente se movieron en la misma dirección en el mismo período (correlación espuria). Este último problema es serio acá, porque la sección 2.7 muestra que varias de estas series son no estacionarias. Por eso la matriz usa **tasas de variación** siempre que es posible.
+Las secciones anteriores describieron cada variable por separado. Esta sección mira cómo se mueven de a pares, con tres herramientas: una matriz de correlaciones por gobierno, una tabla de pares seleccionados con su significatividad y diagramas de dispersión. Ninguna de ellas mide causalidad: una correlación puede deberse a que una variable afecta a la otra, a que ambas responden a una tercera o, en series con tendencia, a que simplemente se movieron en la misma dirección en el mismo período (correlación espuria). Este último problema es serio acá, porque la sección 7 muestra que varias de estas series son no estacionarias. Por eso la matriz usa **tasas de variación** siempre que es posible.
 
-### 2.6.1 Matriz de correlaciones
+### 6.1 Matriz de correlaciones
 
 Se usa la correlación de rangos de **Spearman** (ρ), que mide asociación monótona y no lineal y es robusta a valores extremos: con Pearson, los cuatro meses posteriores a la devaluación dominarían todas las correlaciones de Milei. Las variables son mensuales: inflación, depreciación del oficial, brecha cambiaria (nivel), variación del salario real y nominal privado registrado, variación del EMAE, variación de las reservas, variación del riesgo país (logarítmica, promedio mensual) y resultado primario (% del PBI, 12 meses).
 
 ![Matriz de correlaciones](figuras/B01_correlaciones.png)
 
-**Figura 2.#. Matriz de correlaciones de Spearman, toda la muestra y por gobierno.**
+**Figura #. Matriz de correlaciones de Spearman, toda la muestra y por gobierno.**
 
-**Tabla 2.#. Correlaciones de Spearman, gobierno de Milei**
+**Tabla #. Correlaciones de Spearman, gobierno de Milei**
 
 {{corr_Milei}}
 
-**Tabla 2.#. Correlaciones de Spearman, toda la muestra (may-2016 a sep-2026)**
+**Tabla #. Correlaciones de Spearman, toda la muestra (may-2016 a sep-2026)**
 
 {{corr_Total}}
 
@@ -1175,85 +1175,85 @@ Las diferencias entre gobiernos son tan informativas como las similitudes. Con M
 
 Con Milei hay dos correlaciones nuevas. La **depreciación deja de correlacionarse con la inflación** (ρ de {{rho_Milei_infl_m_dep_oficial}}, contra {{rho_Fernández_infl_m_dep_oficial}} con Fernández): con un crawling peg fijo de 2% durante 2024 la depreciación casi no varió, mientras la inflación bajaba de 25% a 3%, y desde abril de 2025 el dólar se movió sin que la inflación lo acompañara. Y el **resultado primario se correlaciona negativamente con la inflación** ({{rho_Milei_infl_m_res_primario}}) y con la brecha ({{rho_Milei_brecha_res_primario}}): los meses de mayor superávit son los de menor inflación. Es la relación que predice la teoría fiscal de la inflación, pero también la que produciría una correlación espuria entre dos series con tendencia opuesta durante el mismo año y medio. Con Macri la misma correlación tiene signo contrario ({{rho_Macri_infl_m_res_primario}}): el déficit bajaba mientras la inflación subía. La matriz sola no puede distinguir entre ambas interpretaciones; esa es tarea del modelo.
 
-### 2.6.2 Pares seleccionados
+### 6.2 Pares seleccionados
 
 La tabla siguiente informa, para diez pares de variables con una relación económica conocida, la correlación lineal de Pearson (r), la de rangos de Spearman (ρ) y sus p-valores (H0: correlación nula), por gobierno y para toda la muestra. Comparar las dos columnas es en sí un diagnóstico: cuando r es alta y ρ baja, la correlación la producen unos pocos valores extremos.
 
-**Tabla 2.#. Correlaciones de pares seleccionados por gobierno**
+**Tabla #. Correlaciones de pares seleccionados por gobierno**
 
 {{tabla_pares}}
 
 ![Diagramas de dispersión](figuras/B02_dispersion.png)
 
-**Figura 2.#. Diagramas de dispersión de seis pares, con recta de mínimos cuadrados por gobierno.**
+**Figura #. Diagramas de dispersión de seis pares, con recta de mínimos cuadrados por gobierno.**
 
-**Traspaso a precios (depreciación e inflación).** Con Fernández la correlación es alta y robusta (r = {{par_traspaso_a_precios_Fernández_r}}, ρ = {{par_traspaso_a_precios_Fernández_rho}}): en un régimen con cepo y brecha alta, cada aceleración del crawling peg o cada salto del oficial se trasladaba rápido a precios. Con Milei la r de Pearson es todavía más alta ({{par_traspaso_a_precios_Milei_r}}), pero la ρ de Spearman es {{par_traspaso_a_precios_Milei_rho}} (p = {{par_traspaso_a_precios_Milei_p}} para Pearson, no significativa para Spearman): **toda la correlación de Milei la producen diciembre de 2023 y enero de 2024**. Fuera de esos meses, depreciación e inflación no se movieron juntas: la inflación cayó con un dólar que subía 2% por mes y no repuntó con la flotación de 2025. Es el ejemplo más claro del capítulo de por qué hay que mirar ambas correlaciones. Con Macri la relación es débil (r = {{par_traspaso_a_precios_Macri_r}}, ρ = {{par_traspaso_a_precios_Macri_rho}}): con tipo de cambio flotante, sin brecha y con una inflación más baja, el traspaso fue menor y más lento.
+**Traspaso a precios (depreciación e inflación).** Con Fernández la correlación es alta y robusta (r = {{par_traspaso_a_precios_Fernández_r}}, ρ = {{par_traspaso_a_precios_Fernández_rho}}): en un régimen con cepo y brecha alta, cada aceleración del crawling peg o cada salto del oficial se trasladaba rápido a precios. Con Milei la r de Pearson es todavía más alta ({{par_traspaso_a_precios_Milei_r}}), pero la ρ de Spearman es {{par_traspaso_a_precios_Milei_rho}} (p = {{par_traspaso_a_precios_Milei_p}} para Pearson, no significativa para Spearman): **toda la correlación de Milei la producen diciembre de 2023 y enero de 2024**. Fuera de esos meses, depreciación e inflación no se movieron juntas: la inflación cayó con un dólar que subía 2% por mes y no repuntó con la flotación de 2025. Es el ejemplo más claro de todo el análisis de por qué hay que mirar ambas correlaciones. Con Macri la relación es débil (r = {{par_traspaso_a_precios_Macri_r}}, ρ = {{par_traspaso_a_precios_Macri_rho}}): con tipo de cambio flotante, sin brecha y con una inflación más baja, el traspaso fue menor y más lento.
 
 **Inflación y salario.** Como se vio en la matriz, el salario real cae con la inflación con Macri (r = {{par_inflacion_y_salario_real_Macri_r}}) y casi no se relaciona con ella con Fernández ({{par_inflacion_y_salario_real_Fernández_r}}); con Milei, de nuevo, la r ({{par_inflacion_y_salario_real_Milei_r}}) la produce diciembre de 2023 y la ρ es casi cero ({{par_inflacion_y_salario_real_Milei_rho}}). El salario nominal, en cambio, acompaña a la inflación en los tres gobiernos y cada vez más: r de {{par_inflacion_y_salario_nominal_Macri_r}}, {{par_inflacion_y_salario_nominal_Fernández_r}} y {{par_inflacion_y_salario_nominal_Milei_r}}. Es la evidencia de la creciente indexación de la economía argentina, que hace más rápida la transmisión de la inflación a salarios en ambas direcciones: cuando la inflación sube, pero también cuando baja.
 
 **Curva de Phillips (desocupación e inflación interanual, trimestral).** No hay una curva de Phillips estable: la correlación es positiva con Macri (r = {{par_curva_de_phillips_Macri_r}}, estanflación: en 2018-2019 subieron juntas la inflación y la desocupación), negativa con Fernández ({{par_curva_de_phillips_Fernández_r}}, la recuperación pospandemia bajó la desocupación mientras la inflación se aceleraba) y nula con Milei ({{par_curva_de_phillips_Milei_r}}, p = {{par_curva_de_phillips_Milei_p}}). Con Milei la inflación bajó de casi 300% a 31% interanual con una desocupación que se movió en un rango de un punto y medio: la desinflación no tuvo el costo en desempleo que sugiere una curva de Phillips tradicional, aunque sí lo tuvo en salario real y actividad durante 2024. Es coherente con un cambio de expectativas por el ancla fiscal más que con un enfriamiento de la demanda.
 
-**Ley de Okun (crecimiento del PBI y cambio de la desocupación, trimestral).** Es la relación más estable del capítulo: negativa y significativa en los tres gobiernos (r = {{par_ley_de_okun_Macri_r}}, {{par_ley_de_okun_Fernández_r}} y {{par_ley_de_okun_Milei_r}}) y en toda la muestra ({{par_ley_de_okun_Total_r}}). Los trimestres de crecimiento son trimestres de baja de la desocupación. En la figura, la recta de Milei está desplazada hacia arriba respecto de las otras: para un mismo crecimiento del PBI, la desocupación bajó menos o subió más. Es lo esperable si el crecimiento se concentra en sectores poco intensivos en empleo (agro, minería, energía, finanzas), como mostró la sección 2.4.3.
+**Ley de Okun (crecimiento del PBI y cambio de la desocupación, trimestral).** Es la relación más estable de todo el análisis: negativa y significativa en los tres gobiernos (r = {{par_ley_de_okun_Macri_r}}, {{par_ley_de_okun_Fernández_r}} y {{par_ley_de_okun_Milei_r}}) y en toda la muestra ({{par_ley_de_okun_Total_r}}). Los trimestres de crecimiento son trimestres de baja de la desocupación. En la figura, la recta de Milei está desplazada hacia arriba respecto de las otras: para un mismo crecimiento del PBI, la desocupación bajó menos o subió más. Es lo esperable si el crecimiento se concentra en sectores poco intensivos en empleo (agro, minería, energía, finanzas), como mostró la sección 4.3.
 
-**Disciplina fiscal y riesgo país.** Con Milei la relación tiene el signo esperado y es fuerte en Pearson (r = {{par_disciplina_fiscal_y_riesgo_Milei_r}}): más superávit, menos riesgo país. Pero con Macri es positiva y todavía más fuerte ({{par_disciplina_fiscal_y_riesgo_Macri_r}}): el déficit primario bajaba mientras el riesgo país subía, porque la crisis de 2018-2019 fue de financiamiento externo y no de déficit primario. En toda la muestra la correlación es nula ({{par_disciplina_fiscal_y_riesgo_Total_r}}). Ambas series son I(1) (sección 2.7), así que estas correlaciones en niveles son exactamente el tipo de resultado que puede ser espurio; lo que muestran es que el resultado fiscal no alcanza, por sí solo, para explicar el riesgo país.
+**Disciplina fiscal y riesgo país.** Con Milei la relación tiene el signo esperado y es fuerte en Pearson (r = {{par_disciplina_fiscal_y_riesgo_Milei_r}}): más superávit, menos riesgo país. Pero con Macri es positiva y todavía más fuerte ({{par_disciplina_fiscal_y_riesgo_Macri_r}}): el déficit primario bajaba mientras el riesgo país subía, porque la crisis de 2018-2019 fue de financiamiento externo y no de déficit primario. En toda la muestra la correlación es nula ({{par_disciplina_fiscal_y_riesgo_Total_r}}). Ambas series son I(1) (sección 7), así que estas correlaciones en niveles son exactamente el tipo de resultado que puede ser espurio; lo que muestran es que el resultado fiscal no alcanza, por sí solo, para explicar el riesgo país.
 
 **Otros pares.** La brecha y la inflación están muy correlacionadas con Fernández (r = {{par_brecha_e_inflacion_Fernández_r}}) y con Milei ({{par_brecha_e_inflacion_Milei_r}}), y nada con Macri, que casi no tuvo brecha. Los precios regulados y la núcleo se mueven juntos con Fernández y Milei (r de {{par_regulados_y_nucleo_Fernández_r}} y {{par_regulados_y_nucleo_Milei_r}}), lo que indica que la política tarifaria acompañó a la inflación general en lugar de usarse como ancla independiente. La variación de las reservas y la del riesgo país no tienen correlación mensual en ningún gobierno, y la actividad y el salario real tienen una correlación positiva débil con Macri y con Milei (r de {{par_actividad_y_salario_real_Macri_r}} y {{par_actividad_y_salario_real_Milei_r}}).
 
-### 2.6.3 Traspaso a precios con rezagos
+### 6.3 Traspaso a precios con rezagos
 
 La correlación contemporánea no capta que la depreciación puede trasladarse a precios con algunos meses de rezago. La correlación cruzada mide corr(inflación_t, depreciación_t−k) para rezagos k de 0 a 6 meses, por gobierno.
 
-**Tabla 2.#. Correlación cruzada entre la inflación y la depreciación rezagada k meses**
+**Tabla #. Correlación cruzada entre la inflación y la depreciación rezagada k meses**
 
 {{tabla_traspaso}}
 
 ![Traspaso](figuras/B03_traspaso.png)
 
-**Figura 2.#.** Con Fernández la correlación es alta y estable en todos los rezagos (Pearson entre {{ccp_Fernández_0}} y {{ccp_Fernández_3}}, Spearman entre {{ccs_Fernández_6}} y {{ccs_Fernández_2}}), con un máximo a los 2-3 meses: el traspaso era rápido y persistente, propio de una economía con indexación generalizada y expectativas de devaluación permanentes. Con Macri la correlación es máxima a 1 mes (Pearson {{ccp_Macri_1}}) y luego cae: traspaso rápido pero menos persistente. Con Milei, Pearson y Spearman cuentan historias opuestas en los primeros rezagos (Pearson {{ccp_Milei_0}} y Spearman {{ccs_Milei_0}} en el rezago 0): lo que Pearson ve es el shock de diciembre de 2023, que contamina todos los rezagos hasta 4 meses. Spearman, robusta a ese shock, muestra correlaciones nulas en los rezagos 0 a 2 y positivas a 5-6 meses ({{ccs_Milei_5}} y {{ccs_Milei_6}}), por encima de la banda de significatividad aproximada. Con 34 observaciones y tendencias comunes, esa correlación tardía no alcanza para afirmar un traspaso diferido; es una hipótesis para el modelo.
+**Figura #.** Con Fernández la correlación es alta y estable en todos los rezagos (Pearson entre {{ccp_Fernández_0}} y {{ccp_Fernández_3}}, Spearman entre {{ccs_Fernández_6}} y {{ccs_Fernández_2}}), con un máximo a los 2-3 meses: el traspaso era rápido y persistente, propio de una economía con indexación generalizada y expectativas de devaluación permanentes. Con Macri la correlación es máxima a 1 mes (Pearson {{ccp_Macri_1}}) y luego cae: traspaso rápido pero menos persistente. Con Milei, Pearson y Spearman cuentan historias opuestas en los primeros rezagos (Pearson {{ccp_Milei_0}} y Spearman {{ccs_Milei_0}} en el rezago 0): lo que Pearson ve es el shock de diciembre de 2023, que contamina todos los rezagos hasta 4 meses. Spearman, robusta a ese shock, muestra correlaciones nulas en los rezagos 0 a 2 y positivas a 5-6 meses ({{ccs_Milei_5}} y {{ccs_Milei_6}}), por encima de la banda de significatividad aproximada. Con 34 observaciones y tendencias comunes, esa correlación tardía no alcanza para afirmar un traspaso diferido; es una hipótesis para el modelo.
 
 La conclusión práctica es que el traspaso del tipo de cambio a precios no es un parámetro fijo de la economía argentina: depende del régimen cambiario, de la brecha y de la credibilidad de la política. Un modelo que estime un único coeficiente de traspaso para toda la muestra estaría mezclando regímenes.
 
-## 2.7 Preparación para el modelo econométrico
+## 7. Preparación para el modelo econométrico
 
 Esta sección no estima el modelo: describe las propiedades de las series que van a condicionar su especificación.
 
-### 2.7.1 Estacionariedad: pruebas ADF y KPSS
+### 7.1 Estacionariedad: pruebas ADF y KPSS
 
 Se usan dos pruebas con hipótesis nulas opuestas. La de Dickey-Fuller aumentada (ADF) tiene como nula que la serie tiene **raíz unitaria** (no es estacionaria); la KPSS tiene como nula que la serie **es estacionaria**. Usarlas juntas evita leer la falta de rechazo de una sola como prueba de lo contrario: una serie es I(0) si el ADF rechaza (p < 0,05) y el KPSS no rechaza (p > 0,05); tiene raíz unitaria si pasa lo inverso; y el resultado es ambiguo si ambas rechazan o ninguna. Los rezagos del ADF se eligen por el criterio de Akaike. "Det." indica los componentes deterministas (c: constante; ct: constante y tendencia). El p-valor del KPSS que informa statsmodels está acotado entre 0,01 y 0,10 porque se interpola en la tabla de Kwiatkowski et al. (1992).
 
-**Tabla 2.#. Pruebas de raíz unitaria, niveles y primeras diferencias**
+**Tabla #. Pruebas de raíz unitaria, niveles y primeras diferencias**
 
 {{tabla_raiz}}
 
 - **Los niveles de las variables reales son no estacionarios.** El logaritmo del salario real (los tres), del tipo de cambio real y del riesgo país, y el resultado primario como % del PBI tienen raíz unitaria en niveles y son estacionarios en primeras diferencias: son I(1). Cualquier regresión entre ellas en niveles corre riesgo de ser espuria salvo que estén cointegradas; es lo que se advirtió en el análisis bivariado (resultado fiscal y riesgo país).
-- **La inflación mensual está en el límite.** El ADF casi rechaza (p = 0,056) y el KPSS casi rechaza (p = 0,09): es el resultado "ambiguo" típico de una serie estacionaria con cambios de nivel. Perron (1989) mostró que un quiebre estructural no modelado sesga el ADF hacia no rechazar la raíz unitaria, así que la evidencia es compatible con una inflación I(0) alrededor de una media que cambió de régimen (ver 2.7.4). En primera diferencia es claramente I(0).
+- **La inflación mensual está en el límite.** El ADF casi rechaza (p = 0,056) y el KPSS casi rechaza (p = 0,09): es el resultado "ambiguo" típico de una serie estacionaria con cambios de nivel. Perron (1989) mostró que un quiebre estructural no modelado sesga el ADF hacia no rechazar la raíz unitaria, así que la evidencia es compatible con una inflación I(0) alrededor de una media que cambió de régimen (ver 7.4). En primera diferencia es claramente I(0).
 - **El log del IPC** tiene raíz unitaria en niveles y su diferencia (la inflación) es ambigua: con inflación alta y persistente el nivel de precios puede comportarse como I(2). Modelar la inflación y no el nivel de precios evita ese problema.
 - **La depreciación mensual es I(0)** en niveles: es una tasa de variación sin tendencia.
 - **Las series trimestrales (PBI e IBIF)** dan resultados débiles: con 42 observaciones y estacionalidad, las pruebas tienen poca potencia. El logaritmo del PBI es I(1); para el modelo conviene usar su variación interanual o la serie desestacionalizada.
 
-### 2.7.2 Autocorrelación de la inflación mensual: ACF y PACF
+### 7.2 Autocorrelación de la inflación mensual: ACF y PACF
 
 ![ACF y PACF](figuras/D10_acf_pacf_inflacion.png)
 
-**Tabla 2.#. Prueba de Ljung-Box de la inflación mensual (H0: no hay autocorrelación hasta el rezago indicado)**
+**Tabla #. Prueba de Ljung-Box de la inflación mensual (H0: no hay autocorrelación hasta el rezago indicado)**
 
 {{tabla_ljungbox}}
 
-**Figura 2.#.** En niveles, la función de autocorrelación (ACF) decae lentamente y en forma monótona (0,85 en el primer rezago, significativa hasta el quinto), mientras que la autocorrelación parcial (PACF) se corta después de pocos rezagos: es significativa en los rezagos 1 (0,85), 2 (−0,17), 3 (0,38) y 4 (−0,25) y luego queda dentro de la banda. Ese patrón (ACF que decae, PACF que se corta) es la firma de un **proceso autorregresivo de orden bajo, AR(3) o AR(4)**. La Ljung-Box rechaza con holgura la ausencia de autocorrelación: la inflación de un mes predice la del siguiente (inercia inflacionaria). En primera diferencia aparece una autocorrelación negativa grande en el rezago 2 (−0,43), señal de que diferenciar una serie que es casi estacionaria introduce estructura artificial (sobrediferenciación): es otro argumento para modelar la inflación en niveles con quiebres, y no en diferencias.
+**Figura #.** En niveles, la función de autocorrelación (ACF) decae lentamente y en forma monótona (0,85 en el primer rezago, significativa hasta el quinto), mientras que la autocorrelación parcial (PACF) se corta después de pocos rezagos: es significativa en los rezagos 1 (0,85), 2 (−0,17), 3 (0,38) y 4 (−0,25) y luego queda dentro de la banda. Ese patrón (ACF que decae, PACF que se corta) es la firma de un **proceso autorregresivo de orden bajo, AR(3) o AR(4)**. La Ljung-Box rechaza con holgura la ausencia de autocorrelación: la inflación de un mes predice la del siguiente (inercia inflacionaria). En primera diferencia aparece una autocorrelación negativa grande en el rezago 2 (−0,43), señal de que diferenciar una serie que es casi estacionaria introduce estructura artificial (sobrediferenciación): es otro argumento para modelar la inflación en niveles con quiebres, y no en diferencias.
 
-### 2.7.3 Estacionalidad
+### 7.3 Estacionalidad
 
 Se estima un factor estacional por mes (o trimestre) como el promedio de la serie sin tendencia (la tendencia es una media móvil centrada de 12 meses o 4 trimestres), y se prueba con Kruskal-Wallis si todos los meses tienen la misma distribución. Kruskal-Wallis es la versión no paramétrica del ANOVA: compara rangos y no medias, lo que lo hace robusto a los valores extremos. Para la inflación se excluye la ventana de noviembre de 2023 a marzo de 2024: con ella adentro, diciembre aparece como el mes más inflacionario del año solo por la devaluación.
 
-**Tabla 2.#. Estacionalidad**
+**Tabla #. Estacionalidad**
 
 {{tabla_estacionalidad}}
 
 ![Estacionalidad](figuras/D11_estacionalidad.png)
 
-**Figura 2.#.** La inflación mensual tiene una estacionalidad moderada pero estadísticamente significativa (p = {{est_infl_p}}): marzo (inicio de clases, cambio de temporada de ropa) está {{est_infl_max}} puntos por encima de la tendencia y mayo a julio entre 0,7 y 0,85 por debajo. El gasto primario real tiene una estacionalidad enorme (+{{est_gasto_max}}% en diciembre y +17% en junio por el aguinaldo), que justifica trabajar con sumas de 12 meses o variaciones interanuales como en este capítulo. El PBI sin desestacionalizar sube {{est_pib_max}}% en el segundo trimestre (cosecha gruesa) y cae {{est_pib_min}}% en el primero. Como control, el EMAE desestacionalizado no muestra estacionalidad residual (p = 0,22): la desestacionalización del INDEC funciona. Consecuencia para el modelo: la inflación mensual necesita dummies estacionales (al menos para marzo y el bloque mayo-julio) o un componente SARIMA.
+**Figura #.** La inflación mensual tiene una estacionalidad moderada pero estadísticamente significativa (p = {{est_infl_p}}): marzo (inicio de clases, cambio de temporada de ropa) está {{est_infl_max}} puntos por encima de la tendencia y mayo a julio entre 0,7 y 0,85 por debajo. El gasto primario real tiene una estacionalidad enorme (+{{est_gasto_max}}% en diciembre y +17% en junio por el aguinaldo), que justifica trabajar con sumas de 12 meses o variaciones interanuales como en este análisis. El PBI sin desestacionalizar sube {{est_pib_max}}% en el segundo trimestre (cosecha gruesa) y cae {{est_pib_min}}% en el primero. Como control, el EMAE desestacionalizado no muestra estacionalidad residual (p = 0,22): la desestacionalización del INDEC funciona. Consecuencia para el modelo: la inflación mensual necesita dummies estacionales (al menos para marzo y el bloque mayo-julio) o un componente SARIMA.
 
-### 2.7.4 Quiebres estructurales
+### 7.4 Quiebres estructurales
 
 Se usan tres pruebas complementarias.
 
@@ -1263,15 +1263,15 @@ Se usan tres pruebas complementarias.
 
 ![Quiebres](figuras/D12_quiebres_inflacion.png)
 
-**Tabla 2.#. Test de Chow en fechas conocidas**
+**Tabla #. Test de Chow en fechas conocidas**
 
 {{tabla_chow}}
 
-**Tabla 2.#. Test de Zivot-Andrews (H0: raíz unitaria sin quiebre)**
+**Tabla #. Test de Zivot-Andrews (H0: raíz unitaria sin quiebre)**
 
 {{tabla_za}}
 
-**Figura 2.#. Estadístico F del QLR por fecha candidata y lectura de las pruebas.**
+**Figura #. Estadístico F del QLR por fecha candidata y lectura de las pruebas.**
 
 - El QLR encuentra un quiebre muy significativo en la dinámica de la inflación con máximo en **{{qlr_fecha}}** (F = {{qlr}}, por encima del valor crítico de 1%). La fecha es la que separa el shock de la devaluación (diciembre de 2023, que queda en el primer tramo) del proceso de desinflación (desde enero de 2024): el cambio de régimen no es tanto el salto de precios como la velocidad de convergencia posterior.
 - El test de Chow **en diciembre de 2023 no rechaza** (p = 0,63) para el AR(1) de la inflación. No contradice al QLR: si diciembre de 2023 se asigna al segundo tramo, ese dato extremo (25,5% después de 12,8%) queda como un residuo enorme dentro del tramo nuevo y los coeficientes estimados de ambos tramos se parecen. Un mes desplazado cambia por completo la conclusión, lo que indica que el quiebre debe modelarse con una **dummy de impulso** para los meses de la devaluación más una **dummy de régimen** desde enero de 2024, y no solo con un corte de muestra.
@@ -1279,30 +1279,30 @@ Se usan tres pruebas complementarias.
 - Las **medias** de la variación mensual del EMAE y del salario real privado no cambian en ninguna de las dos fechas (p > 0,8): lo que cambió con Milei en esas variables es su volatilidad y la forma de la distribución (un shock inicial y una recuperación), no su tendencia de largo plazo.
 - Zivot-Andrews no rechaza la raíz unitaria para la inflación, el salario real ni el EMAE aun permitiendo un quiebre, y la rechaza en el límite (p = 0,049) para el tipo de cambio real con quiebre en la crisis de abril de 2018.
 
-### 2.7.5 Qué modelo sugieren los datos
+### 7.5 Qué modelo sugieren los datos
 
-Resumiendo la evidencia de este capítulo:
+Resumiendo la evidencia de este análisis:
 
 | Hallazgo descriptivo | Implicancia para el modelo |
 |:---|:---|
 | Inflación mensual persistente (PACF significativa en los rezagos 1 a 4), ADF/KPSS en el límite, quiebre en ene-24 | Modelo autorregresivo en niveles, AR(3)-AR(4), con dummy de impulso (dic-23 a feb-24) y dummy de régimen (desde ene-24) |
 | Estacionalidad significativa de la inflación (marzo, mayo-julio) | Dummies mensuales o componente SARIMA(p,0,q)(1,0,0)₁₂ |
 | Salarios reales, tipo de cambio real, riesgo país y resultado fiscal son I(1) | Trabajar en diferencias, o probar cointegración (Johansen) antes de usar niveles |
-| Depreciación mensual I(0) con un salto discreto; traspaso a precios distinto en cada régimen (2.6.3) | Depreciación como regresor de la inflación, con coeficientes que cambian por régimen (interacción con dummies) y rezagos de 0 a 6 meses |
+| Depreciación mensual I(0) con un salto discreto; traspaso a precios distinto en cada régimen (6.3) | Depreciación como regresor de la inflación, con coeficientes que cambian por régimen (interacción con dummies) y rezagos de 0 a 6 meses |
 | Pearson y Spearman discrepan en los pares de Milei por los meses de la devaluación | Estimaciones robustas (excluir o modelar con dummies dic-23 a feb-24) y chequeos de sensibilidad |
 | Ley de Okun estable, curva de Phillips inestable | La desocupación es más útil como variable de actividad que como determinante de la inflación |
 | Colas pesadas (curtosis de 5 a 128) en inflación, depreciación y retornos | Errores robustos; en mercados, distribución t o GARCH |
 | Errores estándar ingenuos subestiman la incertidumbre de las diferencias entre gobiernos | Regresiones con dummies de gobierno y errores Newey-West (HAC) |
 
-**Propuesta para el capítulo econométrico.** El modelo más adecuado a los datos es un **ARIMAX para la inflación mensual**: un AR(3) o AR(4) en niveles con dummies estacionales, una dummy de impulso para la devaluación y una dummy de régimen desde enero de 2024, más la depreciación mensual del oficial (contemporánea y rezagada, con coeficiente distinto por régimen cambiario) como regresor exógeno. Permite responder dos preguntas concretas: cuánto bajó la "inflación inercial" con el cambio de régimen y cuánto del salto de 2023-2024 fue traspaso del tipo de cambio. Como extensión, un **VAR en tasas de variación** (depreciación, inflación, variación del salario nominal y del EMAE, todas I(0)), identificado con un orden de Cholesky que va de lo más exógeno (tipo de cambio) a lo más endógeno (actividad), permitiría estimar el traspaso a precios y a salarios con funciones de impulso-respuesta. Con 125 observaciones mensuales un VAR de cuatro variables y dos o tres rezagos es estimable, pero no uno más grande. Para las comparaciones simples entre gobiernos alcanza una **regresión de cada variable sobre dummies de gobierno con errores HAC**, que formaliza las diferencias de medias de las tablas de este capítulo. Un modelo de cambio de régimen de Markov (Hamilton, 1989) sería la alternativa si se quisiera que los datos fechen los regímenes en lugar de imponerlos.
+**Propuesta para el modelo econométrico.** El modelo más adecuado a los datos es un **ARIMAX para la inflación mensual**: un AR(3) o AR(4) en niveles con dummies estacionales, una dummy de impulso para la devaluación y una dummy de régimen desde enero de 2024, más la depreciación mensual del oficial (contemporánea y rezagada, con coeficiente distinto por régimen cambiario) como regresor exógeno. Permite responder dos preguntas concretas: cuánto bajó la "inflación inercial" con el cambio de régimen y cuánto del salto de 2023-2024 fue traspaso del tipo de cambio. Como extensión, un **VAR en tasas de variación** (depreciación, inflación, variación del salario nominal y del EMAE, todas I(0)), identificado con un orden de Cholesky que va de lo más exógeno (tipo de cambio) a lo más endógeno (actividad), permitiría estimar el traspaso a precios y a salarios con funciones de impulso-respuesta. Con 125 observaciones mensuales un VAR de cuatro variables y dos o tres rezagos es estimable, pero no uno más grande. Para las comparaciones simples entre gobiernos alcanza una **regresión de cada variable sobre dummies de gobierno con errores HAC**, que formaliza las diferencias de medias de las tablas de este análisis. Un modelo de cambio de régimen de Markov (Hamilton, 1989) sería la alternativa si se quisiera que los datos fechen los regímenes en lugar de imponerlos.
 
-## 2.8 Limitaciones del análisis descriptivo
+## 8. Limitaciones del análisis descriptivo
 
 - **Períodos desiguales.** Milei lleva menos de tres años, contra cuatro de sus antecesores, y su período incluye a la vez el costo de la estabilización (2024) y el rebote (2025). Las estadísticas de cada gobierno resumen ciclos distintos.
 - **Herencia y contexto.** La asignación por gobierno es contable, no causal: la inflación de diciembre de 2023 se registra en el período de Milei aunque refleje precios reprimidos heredados, y la sequía de 2023 y la pandemia de 2020 no son decisiones de política. Separar efecto gobierno de efecto contexto es tarea del modelo, no de la estadística descriptiva.
 - **Macri incompleto.** Faltan los primeros meses del gobierno de Macri en las series de precios y salarios, que fueron de inflación alta, y los ADRs y los bonos empiezan en 2019 y 2021.
 - **Pocas observaciones en las series trimestrales y semestrales.** Con 10 trimestres o 5 semestres por gobierno, asimetría, curtosis y tablas de frecuencias son muy inestables y deben leerse solo como descripción.
-- **Correlación no es causalidad.** Las correlaciones de la sección 2.6 describen co-movimientos; en series con tendencia pueden ser espurias, y ninguna permite atribuir un efecto a una política.
+- **Correlación no es causalidad.** Las correlaciones de la sección 6 describen co-movimientos; en series con tendencia pueden ser espurias, y ninguna permite atribuir un efecto a una política.
 - **Revisiones.** El INDEC revisa el EMAE y las cuentas nacionales con cada publicación; los datos están congelados a octubre de 2026.
 
 ## Referencias

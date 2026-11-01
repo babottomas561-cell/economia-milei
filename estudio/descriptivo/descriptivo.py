@@ -1,4 +1,4 @@
-"""Capítulo de análisis descriptivo: cada variable del scorecard, por gobierno (Macri,
+"""Análisis descriptivo: cada variable del scorecard, por gobierno (Macri,
 Fernández, Milei), con tablas de estadística descriptiva, distribución de frecuencias,
 gráficos y las pruebas que preparan el modelo econométrico (raíz unitaria, ACF/PACF,
 estacionalidad y quiebres estructurales).
@@ -66,7 +66,7 @@ DEMANDA_NOMINAL = {"pib": "4.4_OGP_2004_T_17", "demanda_global": "4.4_DGT_2004_T
                    "existencias": "4.4_DE_2004_T_24", "discrepancia": "4.4_VE_2004_T_21"}
 
 # Componentes de la demanda a precios de 2004 y EMAE trimestral por sector (los mismos ids que
-# estudio/run.py, repetidos acá para que el capítulo no dependa de otros cambios de ese script).
+# estudio/run.py, repetidos acá para que el análisis no dependa de otros cambios de ese script).
 DEMANDA_REAL = {"pib": "4.2_OGP_2004_T_17", "consumo_privado": "4.2_MGCP_2004_T_25", "consumo_publico": "4.2_DGCP_2004_T_30",
                 "inversion": "4.2_DGIT_2004_T_25", "exportaciones": "4.2_DGE_2004_T_26", "importaciones": "4.2_OGI_2004_T_25"}
 SECTORES = {"Agro": "11.2_ISOT_2004_T_39", "Pesca": "11.2_VIPAA_2004_T_5", "Minería y petróleo": "11.2_ISD_2004_T_26",
@@ -1109,7 +1109,7 @@ def fig_sectores(t: pd.DataFrame) -> None:
 
 @dataclass
 class Var:
-    """Una variable del capítulo: ``dist`` es la serie cuya distribución se describe (histograma,
+    """Una variable del análisis: ``dist`` es la serie cuya distribución se describe (histograma,
     frecuencias, boxplot); ``nivel``, si existe, es la que se grafica en el tiempo."""
     key: str
     titulo: str
@@ -1373,10 +1373,10 @@ def render(plantilla: str, valores: dict[str, str]) -> str:
     if faltan:
         raise KeyError(f"La plantilla usa claves que el script no calcula: {faltan}")
     doc = re.sub(r"\{\{(\w+)\}\}", lambda mt: valores[mt.group(1)], plantilla)
-    # Numeración correlativa: la plantilla escribe "Tabla 2.#" y "Figura 2.#" y acá se numeran en orden
+    # Numeración correlativa: la plantilla escribe "Tabla #" y "Figura #" y acá se numeran en orden
     for nombre in ("Tabla", "Figura"):
         n = iter(range(1, 1000))
-        doc = re.sub(rf"{nombre} 2\.#", lambda _: f"{nombre} 2.{next(n)}", doc)
+        doc = re.sub(rf"{nombre} #", lambda _: f"{nombre} {next(n)}", doc)
     return doc
 
 
@@ -1385,7 +1385,7 @@ MARCAS = ("<!-- descriptivo:inicio -->", "<!-- descriptivo:fin -->")
 
 
 def volcar_en_readme(doc: str) -> None:
-    """Copia el capítulo dentro del README, entre las dos marcas: baja un nivel cada título (el
+    """Copia el análisis dentro del README, entre las dos marcas: baja un nivel cada título (el
     README ya tiene su propio título) y reescribe las rutas de las figuras relativas a la raíz."""
     doc = re.sub(r"^(#+) ", r"#\1 ", doc, flags=re.M)
     doc = doc.replace("](figuras/", "](estudio/descriptivo/figuras/")
