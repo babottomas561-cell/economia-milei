@@ -130,3 +130,9 @@
 uv sync
 uv run python estudio/run.py
 ```
+
+**Análisis descriptivo.** El capítulo [`estudio/descriptivo/ANALISIS_DESCRIPTIVO.md`](estudio/descriptivo/ANALISIS_DESCRIPTIVO.md) presenta la ficha de cada variable, estadística descriptiva y distribuciones por gobierno (Macri, Fernández, Milei), salario nominal contra real, y las pruebas que preparan el modelo econométrico (ADF/KPSS, ACF/PACF, estacionalidad, quiebres):
+
+```bash
+uv run python estudio/descriptivo/descriptivo.py
+```
