@@ -16,11 +16,13 @@ from __future__ import annotations
 import re
 import sys
 import warnings
+from dataclasses import dataclass
 from pathlib import Path
 
 import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
 import matplotlib.ticker as mtick
+from matplotlib.colors import LinearSegmentedColormap
 import numpy as np
 import pandas as pd
 from scipy import stats
@@ -36,8 +38,8 @@ import run as base  # noqa: E402  (estudio/run.py: ids, IPC extendido, deflactor
 
 from quantkit import style  # noqa: E402
 from quantkit.bonos import total_return  # noqa: E402
-from quantkit.data import (load_bcra, load_data912, load_dolares, load_inflacion, load_prices,  # noqa: E402
-                           load_riesgo_pais, load_series)
+from quantkit.data import (DATA_DIR, load_bcra, load_data912, load_dolares, load_inflacion,  # noqa: E402
+                           load_prices, load_riesgo_pais, load_series)
 
 FIG = HERE / "figuras"
 BASE_M = base.BASE_M
@@ -62,6 +64,20 @@ DEMANDA_NOMINAL = {"pib": "4.4_OGP_2004_T_17", "demanda_global": "4.4_DGT_2004_T
                    "consumo_privado": "4.4_DGCP_2004_T_27", "consumo_publico": "4.4_DGCP_2004_T_30",
                    "inversion": "4.4_DGI_2004_T_19", "importaciones": "4.4_OGI_2004_T_25",
                    "existencias": "4.4_DE_2004_T_24", "discrepancia": "4.4_VE_2004_T_21"}
+
+# Componentes de la demanda a precios de 2004 y EMAE trimestral por sector (los mismos ids que
+# estudio/run.py, repetidos acá para que el capítulo no dependa de otros cambios de ese script).
+DEMANDA_REAL = {"pib": "4.2_OGP_2004_T_17", "consumo_privado": "4.2_MGCP_2004_T_25", "consumo_publico": "4.2_DGCP_2004_T_30",
+                "inversion": "4.2_DGIT_2004_T_25", "exportaciones": "4.2_DGE_2004_T_26", "importaciones": "4.2_OGI_2004_T_25"}
+SECTORES = {"Agro": "11.2_ISOT_2004_T_39", "Pesca": "11.2_VIPAA_2004_T_5", "Minería y petróleo": "11.2_ISD_2004_T_26",
+            "Industria": "11.2_VMASD_2004_T_23", "Electricidad, gas y agua": "11.2_ITC_2004_T_21",
+            "Construcción": "11.2_VMATC_2004_T_12", "Comercio": "11.2_AGCS_2004_T_41", "Hoteles y restaurantes": "11.2_P_2004_T_20",
+            "Transporte y comunicaciones": "11.2_EMC_2004_T_25", "Intermediación financiera": "11.2_IM_2004_T_25",
+            "Inmobiliarias y empresariales": "11.2_SEGA_2004_T_48", "Administración pública": "11.2_C_2004_T_60",
+            "Enseñanza": "11.2_CMMR_2004_T_10"}
+# Resumen trimestral de los microdatos de la EPH (asalariados registrados y no registrados), congelado
+# por quantkit.eph; se lee directo del CSV.
+EPH_CSV = DATA_DIR / "eph_salarios.csv"
 
 # Valores críticos del test QLR (sup-F de Quandt-Andrews), 15% de recorte, q = 2 parámetros:
 # Stock y Watson, "Introduction to Econometrics", tabla 14.5 (de Andrews, 1993/2003).
@@ -115,7 +131,8 @@ def por_gobierno(s: pd.Series, freq: str) -> dict[str, pd.Series]:
 def describir(s: pd.Series) -> dict:
     s = s.dropna()
     media, desvio = s.mean(), s.std()
-    return {"N": len(s), "Media": media, "Mediana": s.median(), "Desvío": desvio, "Mín": s.min(), "Máx": s.max(),
+    return {"N": len(s), "Media": media, "Mediana": s.median(), "Desvío": desvio, "Mín": s.min(), "Q1": s.quantile(0.25),
+            "Q3": s.quantile(0.75), "Máx": s.max(),
             # el CV solo tiene sentido en variables estrictamente positivas (niveles, no tasas que cambian de signo)
             "CV (%)": 100 * desvio / media if (s > 0).all() else np.nan,
             "Asimetría": s.skew(), "Curtosis": s.kurt()}
@@ -161,6 +178,9 @@ def cargar() -> dict:
     s["infl_m"] = var.loc[INFL_DESDE:]
     s["infl_a"] = 100 * ipc.pct_change(12)
     s["log_ipc"] = np.log(ipc)
+    s["infl_nucleo"] = 100 * m["ipc_nucleo"].dropna().pct_change()
+    s["infl_regulados"] = 100 * m["ipc_regulados"].dropna().pct_change()
+    s["regulados_vs_nucleo"] = 100 * (m["ipc_regulados"] / m["ipc_nucleo"]).dropna() / (m["ipc_regulados"] / m["ipc_nucleo"]).loc[BASE_M]
     for k in ["sal_priv_reg", "sal_publico", "sal_no_reg", "smvm"]:
         nominal = m[k].shift(-base.REZAGO_NO_REG) if k == "sal_no_reg" else m[k]
         r = base.real(nominal, ipc).loc[: ipc.index[-1]]
@@ -176,7 +196,7 @@ def cargar() -> dict:
     s["dep_oficial"] = 100 * of.pct_change()
     tcr = (of / ipc).dropna()
     s["tcr"] = 100 * tcr / tcr.loc[BASE_M]
-    s["brecha"] = (100 * (dol["CCL"] / dol["oficial"] - 1)).resample("MS").mean()
+    s["brecha"] = (100 * (dol["CCL"] / dol["oficial"] - 1)).resample("MS").mean().loc["2016-01-01":]
 
     # Fiscal: flujos de 12 meses sobre el PBI nominal de los 4 trimestres correspondientes.
     # El PBI trimestral está a tasa anual: su promedio móvil de 12 meses es el PBI anual. Los dos
@@ -190,6 +210,11 @@ def cargar() -> dict:
     s["gasto_pib"] = 100 * gasto.rolling(12).sum() / pib12
     s["gasto_real"] = gasto / ipc
     s["d_gasto_real"] = 100 * s["gasto_real"].pct_change(12)
+    s["ing_pib"] = 100 * f["ing_primarios"].rolling(12).sum() / pib12
+    s["d_ing_real"] = 100 * (f["ing_primarios"] / ipc).pct_change(12)
+    s["intereses_pib"] = 100 * f["intereses"].rolling(12).sum() / pib12
+    s["jub_pib"] = 100 * f["jubilaciones"].rolling(12).sum() / pib12
+    s["d_jub_real"] = 100 * (f["jubilaciones"] / ipc).pct_change(12)
 
     # Trimestrales
     s["pib_real"] = q["pib_real"].dropna()
@@ -199,6 +224,24 @@ def cargar() -> dict:
     s["tasa_inv"] = 100 * dem_n["inversion"].rolling(4).sum() / dem_n["pib"].rolling(4).sum()
     s["sub_energia_pib"] = 100 * energia / (q["pib_nominal"] / 4)     # flujo del trimestre sobre el PBI del trimestre
     s["desocupacion"] = 100 * q["desocupacion"].dropna()
+    dem_r = load_series(DEMANDA_REAL)
+    for k in ["consumo_privado", "consumo_publico", "exportaciones", "importaciones"]:
+        s[f"g_{k}"] = 100 * dem_r[k].pct_change(4)
+    sect = load_series(SECTORES)
+    s["sectores"] = 100 * sect.pct_change(4)
+    s["sectores_nivel"] = sect
+
+    # EPH: salario de bolsillo de asalariados en blanco y en negro (misma encuesta, misma pregunta). El
+    # ingreso es del mes anterior a la entrevista: se deflacta con el IPC de esos meses.
+    eph = pd.read_csv(EPH_CSV, index_col=0, parse_dates=True)
+    ipc_q = ipc.shift(1).resample("QS").mean().reindex(eph.index)
+    t0 = pd.Timestamp("2023-10-01")
+    for col, k in [("total_reg_media", "eph_blanco"), ("total_noreg_media", "eph_negro")]:
+        r = eph[col] / ipc_q
+        s[k] = 100 * r / r.loc[t0]
+    s["eph_ratio"] = 100 * eph["total_noreg_media"] / eph["total_reg_media"]
+    s["eph_tasa"] = eph["tasa_no_registro"]
+    s["eph_brecha_cond"] = eph["brecha_condicional"]
     s["pobreza"] = pd.Series({pd.Timestamp(f"{k[:4]}-{'01' if k[-1] == '1' else '07'}-01"): v
                               for k, v in base.POBREZA.items()})
 
@@ -218,6 +261,13 @@ def cargar() -> dict:
     s["r_bonos"] = 100 * tr.mean(axis=1)             # cartera equiponderada GD30/GD35/GD41, rebalanceo diario
     s["bonos_idx"] = 100 * np.exp(tr.mean(axis=1).fillna(0).cumsum())
     s["reservas"] = load_bcra(1, "reservas") / 1000
+    s["reservas_m"] = s["reservas"].resample("MS").last().loc["2016-01-01":]
+    s["d_reservas"] = 100 * s["reservas_m"].pct_change()
+    s["d_log_rp"] = 100 * s["log_rp"].diff()
+    s["rp_m"] = rp.resample("MS").mean().loc["2016-01-01":]
+    # Trimestralizaciones para cruzar con variables de la EPH y de cuentas nacionales
+    s["infl_a_q"] = s["infl_a"].resample("QS").mean()
+    s["d_desocupacion"] = s["desocupacion"].diff(4)              # cambio interanual, en puntos porcentuales
     return {"s": s, "m": m, "f": f, "q": q, "ipc": ipc, "energia": energia, "dem_n": dem_n, "dol": dol}
 
 
@@ -398,60 +448,8 @@ def fig_series_mercados(s: dict) -> None:
 
 # ---------------------------------------------------------------- distribución de la inflación
 
-BINS = [0, 1, 2, 3, 4, 5, 7.5, 10, 15, 30]
-
-
-def tabla_frecuencias(v: pd.Series) -> pd.DataFrame:
-    """Distribución de frecuencias con intervalos [a, b) fijos y comunes a los tres gobiernos,
-    para que las frecuencias relativas se puedan comparar entre ellos."""
-    cats = pd.cut(v, BINS, right=False)
-    fa = cats.value_counts().reindex(cats.cat.categories, fill_value=0)
-    out = pd.DataFrame({"Marca de clase": [(i.left + i.right) / 2 for i in fa.index], "Frec. absoluta": fa.to_numpy(),
-                        "Frec. relativa (%)": 100 * fa.to_numpy() / fa.sum()})
-    out["Frec. abs. acumulada"] = out["Frec. absoluta"].cumsum()
-    out["Frec. rel. acumulada (%)"] = out["Frec. relativa (%)"].cumsum()
-    out.index = [f"[{num(i.left, 1 if i.left % 1 else 0)}; {num(i.right, 1 if i.right % 1 else 0)})" for i in fa.index]
-    out.index.name = "Inflación mensual (%)"
-    return out
-
-
-def fmt_frecuencias(t: pd.DataFrame) -> str:
-    txt = pd.DataFrame(index=t.index)
-    txt["Marca de clase"] = [num(x, 2) for x in t["Marca de clase"]]
-    txt["Frec. absoluta"] = t["Frec. absoluta"].astype(int)
-    txt["Frec. relativa (%)"] = [num(x, 1) for x in t["Frec. relativa (%)"]]
-    txt["Frec. abs. acumulada"] = t["Frec. abs. acumulada"].astype(int)
-    txt["Frec. rel. acumulada (%)"] = [num(x, 1) for x in t["Frec. rel. acumulada (%)"]]
-    total = pd.DataFrame({"Marca de clase": [""], "Frec. absoluta": [int(t["Frec. absoluta"].sum())],
-                          "Frec. relativa (%)": ["100,0"], "Frec. abs. acumulada": [""], "Frec. rel. acumulada (%)": [""]},
-                         index=["**Total**"])
-    return md_tabla(pd.concat([txt, total]).rename_axis(t.index.name))
-
-
-def fig_histogramas(s: dict) -> dict:
-    grupos = por_gobierno(s["infl_m"], "M")
-    fig, axes = plt.subplots(1, 3, figsize=(16, 5), sharey=True)
-    out = {}
-    for a, (g, v) in zip(axes, grupos.items()):
-        t = tabla_frecuencias(v)
-        out[g] = t
-        # Intervalos de ancho distinto: el histograma grafica densidad (frecuencia relativa / ancho)
-        # para que el área, no la altura, sea proporcional a la frecuencia.
-        a.hist(v, bins=BINS, density=True, color=COLOR[g], edgecolor=style.SURFACE, lw=1.2)
-        a.axvline(v.mean(), color=style.INK, lw=1.2, ls="--")
-        a.axvline(v.median(), color=style.INK, lw=1.2, ls=":")
-        a.annotate(f"media {num(v.mean(), 1)}%\nmediana {num(v.median(), 1)}%", xy=(0.97, 0.95), xycoords="axes fraction",
-                   ha="right", va="top", fontsize=9.5)
-        a.set_xlim(0, 30)
-        a.set_xticks([0, 2, 4, 5, 10, 15, 20, 25, 30])
-        a.xaxis.set_major_formatter(mtick.FuncFormatter(lambda x, _: f"{x:g}%"))
-        a.set_title(f"{g} (N = {len(v)})")
-        style.subtitle(a, f"{per(v.index[0], 'M')} a {per(v.index[-1], 'M')}")
-        a.set_xlabel("Inflación mensual")
-    axes[0].set_ylabel("Densidad (frecuencia relativa / ancho del intervalo)")
-    style.source(fig, "Fuente: INDEC. Intervalos comunes [0;1), [1;2) … [15;30). Línea rayada: media; punteada: mediana.")
-    style.save(fig, FIG / "D04_histogramas_inflacion.png")
-    return out
+# intervalos fijos para la inflación mensual: más finos donde está la masa (0-5%) y anchos en la cola
+BINS = BINS_INFL = [0, 1, 2, 3, 4, 5, 7.5, 10, 15, 30]
 
 
 # ---------------------------------------------------------------- barras
@@ -914,6 +912,444 @@ def quiebres(s: dict) -> dict:
     return out
 
 
+# ---------------------------------------------------------------- bivariado
+
+# Variables mensuales de la matriz de correlaciones: tasas de cambio salvo brecha y resultado primario,
+# que ya son ratios estacionarios en la muestra de cada gobierno.
+MATRIZ = {"Inflación": "infl_m", "Depreciación": "dep_oficial", "Brecha": "brecha", "Salario real": "d_sal_priv_reg",
+          "Salario nominal": "dn_sal_priv_reg", "EMAE": "d_emae", "Reservas": "d_reservas", "Riesgo país": "d_log_rp",
+          "Res. primario": "res_primario"}
+
+
+@dataclass
+class Par:
+    titulo: str
+    x: str
+    y: str
+    freq: str
+    xlab: str
+    ylab: str
+    xlim: tuple | None = None
+
+
+PARES = [
+    Par("Traspaso a precios", "dep_oficial", "infl_m", "M", "Depreciación oficial (% mensual)", "Inflación (% mensual)", (-6, 32)),
+    Par("Inflación y salario real", "infl_m", "d_sal_priv_reg", "M", "Inflación (% mensual)",
+        "Salario real privado registrado (% mensual)"),
+    Par("Inflación y salario nominal", "infl_m", "dn_sal_priv_reg", "M", "Inflación (% mensual)",
+        "Salario nominal privado registrado (% mensual)"),
+    Par("Curva de Phillips", "desocupacion", "infl_a_q", "Q", "Desocupación (% de la PEA)", "Inflación interanual (%)"),
+    Par("Ley de Okun", "g_pib", "d_desocupacion", "Q", "PBI real (% interanual)", "Cambio interanual de la desocupación (pp)"),
+    Par("Disciplina fiscal y riesgo", "res_primario", "rp_m", "M", "Resultado primario (% del PBI, 12 meses)",
+        "Riesgo país (pb, promedio mensual)"),
+    Par("Brecha e inflación", "brecha", "infl_m", "M", "Brecha cambiaria (%)", "Inflación (% mensual)"),
+    Par("Regulados y núcleo", "infl_nucleo", "infl_regulados", "M", "Inflación núcleo (% mensual)",
+        "Inflación de regulados (% mensual)"),
+    Par("Reservas y riesgo país", "d_reservas", "d_log_rp", "M", "Reservas (% mensual)", "Riesgo país (% mensual, log)"),
+    Par("Actividad y salario real", "d_sal_priv_reg", "d_emae", "M", "Salario real (% mensual)", "EMAE (% mensual)"),
+]
+
+
+def emparejar(s: dict, par: Par) -> pd.DataFrame:
+    d = pd.concat({"x": s[par.x], "y": s[par.y]}, axis=1, sort=True).dropna()
+    d["g"] = gobierno(d.index, par.freq)
+    return d.dropna()
+
+
+def matriz_corr(s: dict) -> dict[str, pd.DataFrame]:
+    """Spearman (por rangos): robusto a los valores extremos de dic-23 que dominan Pearson."""
+    df = pd.DataFrame({k: s[v] for k, v in MATRIZ.items()}).loc["2016-05-01":]
+    g = gobierno(df.index, "M")
+    out = {"Toda la muestra": df.corr("spearman")}
+    out.update({gg: df[g == gg].corr("spearman") for gg in ORDEN})
+    return out
+
+
+def fig_corr(mats: dict[str, pd.DataFrame]) -> None:
+    cmap = LinearSegmentedColormap.from_list("div", style.DIVERGING[::-1])
+    fig, axes = plt.subplots(2, 2, figsize=(17, 15), gridspec_kw={"wspace": 0.35, "hspace": 0.3})
+    for a, (g, mt) in zip(axes.flat, mats.items()):
+        im = a.imshow(np.where(np.eye(len(mt), dtype=bool), np.nan, mt.to_numpy()), cmap=cmap, vmin=-1, vmax=1)
+        n = len(mt)
+        a.set_xticks(range(n), mt.columns, rotation=45, ha="right", fontsize=10)
+        a.set_yticks(range(n), mt.index, fontsize=10)
+        a.grid(False)
+        for i in range(n):
+            for j in range(n):
+                if i != j:
+                    val = mt.iat[i, j]
+                    a.text(j, i, num(val, 2), ha="center", va="center", fontsize=8.5,
+                           color=style.SURFACE if abs(val) > 0.55 else style.INK)
+        a.set_title(g, color=COLOR.get(g, style.INK))
+    fig.colorbar(im, ax=axes, shrink=0.5, label="ρ de Spearman")
+    style.source(fig, "Fuente: INDEC, BCRA, MECON, ArgentinaDatos, JP Morgan (riesgo país). Correlación de rangos de Spearman "
+                      "entre series mensuales, pares disponibles en cada gobierno.\nTasas de variación mensual salvo brecha "
+                      "(nivel, %) y resultado primario (% del PBI, 12 meses).")
+    style.save(fig, FIG / "B01_correlaciones.png")
+
+
+def tabla_pares(s: dict) -> tuple[pd.DataFrame, dict]:
+    filas, crudo = [], {}
+    for par in PARES:
+        d = emparejar(s, par)
+        for g in ORDEN + ["Toda la muestra"]:
+            dd = d if g == "Toda la muestra" else d[d["g"] == g]
+            if len(dd) < 8:
+                continue
+            r, pr = stats.pearsonr(dd["x"], dd["y"])
+            rho, ps = stats.spearmanr(dd["x"], dd["y"])
+            crudo[(par.titulo, g)] = (r, pr, rho, ps, len(dd))
+            filas.append({"Relación": par.titulo, "Gobierno": g, "N": len(dd), "Pearson r": num(r, 2), "p (Pearson)": num(pr, 3),
+                          "Spearman ρ": num(rho, 2), "p (Spearman)": num(ps, 3)})
+    return pd.DataFrame(filas), crudo
+
+
+def fig_dispersion(s: dict, crudo: dict) -> None:
+    fig, axes = plt.subplots(2, 3, figsize=(17, 11))
+    for a, par in zip(axes.flat, PARES[:6]):
+        d = emparejar(s, par)
+        for g in ORDEN:
+            dd = d[d["g"] == g]
+            if len(dd) < 3:
+                continue
+            r = crudo.get((par.titulo, g), (np.nan,))[0]
+            a.scatter(dd["x"], dd["y"], s=26 if par.freq == "M" else 40, color=COLOR[g], alpha=0.75, edgecolor="none",
+                      label=f"{g} (r = {num(r, 2)})")
+            m, b = np.polyfit(dd["x"], dd["y"], 1)
+            xs = np.linspace(dd["x"].min(), dd["x"].max() if not par.xlim else min(dd["x"].max(), par.xlim[1]), 50)
+            a.plot(xs, m * xs + b, color=COLOR[g], lw=1.8)
+        if par.xlim:
+            a.set_xlim(*par.xlim)
+            fuera = d[(d["x"] > par.xlim[1]) | (d["x"] < par.xlim[0])]
+            if len(fuera):
+                a.set_ylim(top=d.loc[~d.index.isin(fuera.index), "y"].max() * 1.15)
+                a.annotate("Fuera de escala: " + "; ".join(f"{base.mes(i)} ({num(r.x, 0)}%; {num(r.y, 1)}%)"
+                                                            for i, r in fuera.iterrows()),
+                           xy=(0.98, 0.97), xycoords="axes fraction", ha="right", va="top", fontsize=8.5, color=style.INK_2)
+        a.axhline(0, color=style.INK_2, lw=0.6)
+        a.set_xlabel(par.xlab, fontsize=10)
+        a.set_ylabel(par.ylab, fontsize=10)
+        a.set_title(par.titulo, fontsize=13)
+        a.legend(fontsize=8.5, loc="upper left" if par.titulo != "Ley de Okun" else "upper right")
+    style.source(fig, "Fuente: INDEC, BCRA, MECON, JP Morgan. Cada punto es un mes (o trimestre en Phillips y Okun); la recta es "
+                      "un ajuste lineal por MCO dentro de cada gobierno; r es la correlación de Pearson.")
+    fig.tight_layout(h_pad=2.5)
+    style.save(fig, FIG / "B02_dispersion.png")
+
+
+def traspaso(s: dict, rezagos: int = 6, metodo: str = "pearson") -> pd.DataFrame:
+    """Correlación cruzada corr(inflación_t, depreciación_{t-k}) por gobierno."""
+    d = pd.concat({"pi": s["infl_m"], "e": s["dep_oficial"]}, axis=1, sort=True).loc[INFL_DESDE:]
+    g = gobierno(d.index, "M")
+    out = {}
+    for gg in ORDEN:
+        sub = d[g == gg]
+        out[gg] = [sub["pi"].corr(sub["e"].shift(k), method=metodo) for k in range(rezagos + 1)]
+    return pd.DataFrame(out, index=pd.Index(range(rezagos + 1), name="Rezago k (meses)"))
+
+
+def fig_traspaso(ccs: dict[str, pd.DataFrame], n: dict) -> None:
+    fig, axes = plt.subplots(1, 2, figsize=(15, 5.8), sharey=True)
+    banda = 1.96 / np.sqrt(min(n.values()))
+    for a, (metodo, cc) in zip(axes, ccs.items()):
+        for g in cc.columns:
+            a.plot(cc.index, cc[g], color=COLOR[g], lw=2.2, marker="o", label=g)
+        a.axhspan(-banda, banda, color=style.MUTED, alpha=0.12, lw=0)
+        a.axhline(0, color=style.INK_2, lw=0.8)
+        a.set_xlabel("Rezago k de la depreciación (meses)")
+        a.set_title(metodo)
+    axes[0].set_ylabel("corr(inflación t, depreciación t−k)")
+    style.subtitle(axes[0], "lineal: sensible a los meses extremos (dic-23)")
+    style.subtitle(axes[1], "por rangos: robusta a los meses extremos")
+    axes[1].legend(fontsize=10, loc="lower left")
+    style.source(fig, "Fuente: INDEC (IPC) y BCRA (Com. A 3500, promedio mensual). Correlación entre la inflación mensual y la "
+                      f"depreciación del oficial k meses antes. Banda gris: ±1,96/√N con el N más chico (Milei, {min(n.values())} "
+                      "meses), zona no significativa al 5%.")
+    style.save(fig, FIG / "B03_traspaso.png")
+
+
+def sectores(s: dict) -> pd.DataFrame:
+    yoy, niv = s["sectores"], s["sectores_nivel"]
+    g = gobierno(yoy.index, "Q")
+    t = pd.DataFrame({gg: yoy[g == gg].mean() for gg in ORDEN})
+    ult4 = niv.iloc[-4:].sum()
+    t["Últimos 4 trim. vs 2023 (%)"] = 100 * (ult4 / niv.loc["2023"].sum() - 1)
+    t.attrs["ultimo"] = per(niv.index[-1], "Q")
+    return t.sort_values("Últimos 4 trim. vs 2023 (%)")
+
+
+def fig_sectores(t: pd.DataFrame) -> None:
+    fig, (a, b) = plt.subplots(1, 2, figsize=(16, 7.5), sharey=True, gridspec_kw={"width_ratios": [1.5, 1]})
+    y = np.arange(len(t))
+    h = 0.26
+    for i, g in enumerate(ORDEN):
+        a.barh(y + (1 - i) * h, t[g], height=h, color=COLOR[g], label=g)
+    a.set_yticks(y, t.index, fontsize=10.5)
+    a.axvline(0, color=style.INK_2, lw=0.8)
+    a.grid(axis="y", visible=False)
+    a.set_title("Crecimiento interanual promedio por gobierno")
+    style.subtitle(a, "% interanual, promedio de los trimestres de cada gobierno")
+    a.legend(fontsize=10, loc="lower right")
+    c = t["Últimos 4 trim. vs 2023 (%)"]
+    b.barh(y, c, color=[style.BLUE if v >= 0 else style.RED for v in c], height=0.6)
+    for yy, v in zip(y, c):
+        b.annotate(num(v, 1), xy=(v, yy), xytext=(4 if v >= 0 else -4, 0), textcoords="offset points",
+                   ha="left" if v >= 0 else "right", va="center", fontsize=9.5)
+    b.axvline(0, color=style.INK_2, lw=0.8)
+    b.grid(axis="y", visible=False)
+    b.set_title("Milei: nivel contra 2023")
+    style.subtitle(b, f"%, suma de los últimos 4 trimestres (hasta {t.attrs['ultimo']}) contra 2023")
+    lo, hi = c.min(), c.max()
+    b.set_xlim(min(lo * 1.35, -2), hi * 1.25)
+    style.source(fig, "Fuente: INDEC, valor agregado bruto por sector a precios de 2004 (cuentas nacionales trimestrales).")
+    style.save(fig, FIG / "B04_sectores.png")
+
+
+# ---------------------------------------------------------------- análisis por variable
+
+@dataclass
+class Var:
+    """Una variable del capítulo: ``dist`` es la serie cuya distribución se describe (histograma,
+    frecuencias, boxplot); ``nivel``, si existe, es la que se grafica en el tiempo."""
+    key: str
+    titulo: str
+    unidad: str
+    dist: str
+    freq: str
+    dec: int = 1
+    nivel: str | None = None
+    nivel_titulo: str = ""
+    ref: float | None = None          # línea de referencia horizontal en la serie de tiempo
+    log: bool = False                 # serie de tiempo en escala logarítmica
+    bins: list | None = None          # intervalos de clase fijos (si no, Sturges con extremos abiertos)
+    fuente: str = ""
+
+
+VARIABLES_FICHA = [
+    Var("infl_m", "Inflación mensual", "% mensual", "infl_m", "M", 2, bins=BINS_INFL),
+    Var("infl_a", "Inflación interanual", "% interanual", "infl_a", "M", 1, log=True),
+    Var("infl_nucleo", "Inflación núcleo", "% mensual", "infl_nucleo", "M", 2),
+    Var("infl_regulados", "Inflación de precios regulados", "% mensual", "infl_regulados", "M", 2,
+        nivel="regulados_vs_nucleo", nivel_titulo="Precios regulados relativos a la núcleo (nov-2023 = 100)", ref=100),
+    Var("sal_priv_reg", "Salario real privado registrado", "% mensual", "d_sal_priv_reg", "M", 2,
+        nivel="sal_priv_reg", nivel_titulo="Índice deflactado por el IPC, nov-2023 = 100", ref=100),
+    Var("sal_publico", "Salario real público", "% mensual", "d_sal_publico", "M", 2,
+        nivel="sal_publico", nivel_titulo="Índice deflactado por el IPC, nov-2023 = 100", ref=100),
+    Var("sal_no_reg", "Salario real no registrado", "% mensual", "d_sal_no_reg", "M", 2,
+        nivel="sal_no_reg", nivel_titulo="Índice deflactado por el IPC, nov-2023 = 100 (corrido 5 meses)", ref=100),
+    Var("smvm", "Salario mínimo real", "nov-2023 = 100", "smvm", "M", 1, ref=100),
+    Var("eph_ratio", "Salario en negro por cada $100 en blanco (EPH)", "%", "eph_ratio", "Q", 1),
+    Var("eph_tasa", "Asalariados no registrados (EPH)", "% de los asalariados", "eph_tasa", "Q", 1),
+    Var("emae", "Actividad económica mensual (EMAE)", "% mensual", "d_emae", "M", 2,
+        nivel="emae", nivel_titulo="Desestacionalizado, nov-2023 = 100", ref=100),
+    Var("pib", "PBI real", "% interanual", "g_pib", "Q", 1, ref=0),
+    Var("ibif", "Inversión bruta interna fija", "% interanual", "g_ibif", "Q", 1, ref=0),
+    Var("tasa_inv", "Tasa de inversión", "% del PBI", "tasa_inv", "Q", 1),
+    Var("consumo", "Consumo privado", "% interanual", "g_consumo_privado", "Q", 1, ref=0),
+    Var("cpub", "Consumo público", "% interanual", "g_consumo_publico", "Q", 1, ref=0),
+    Var("expo", "Exportaciones", "% interanual", "g_exportaciones", "Q", 1, ref=0),
+    Var("impo", "Importaciones", "% interanual", "g_importaciones", "Q", 1, ref=0),
+    Var("gasto", "Gasto primario", "% interanual real", "d_gasto_real", "M", 1,
+        nivel="gasto_pib", nivel_titulo="% del PBI, suma de 12 meses"),
+    Var("ingresos", "Ingresos primarios", "% interanual real", "d_ing_real", "M", 1,
+        nivel="ing_pib", nivel_titulo="% del PBI, suma de 12 meses"),
+    Var("res_primario", "Resultado primario", "% del PBI (12 meses)", "res_primario", "M", 2, ref=0),
+    Var("res_financiero", "Resultado financiero", "% del PBI (12 meses)", "res_financiero", "M", 2, ref=0),
+    Var("intereses", "Intereses de la deuda", "% del PBI (12 meses)", "intereses_pib", "M", 2),
+    Var("jubilaciones", "Gasto en jubilaciones", "% interanual real", "d_jub_real", "M", 1,
+        nivel="jub_pib", nivel_titulo="% del PBI, suma de 12 meses"),
+    Var("sub_energia", "Subsidios a la energía", "% del PBI del trimestre", "sub_energia_pib", "Q", 2),
+    Var("dolar", "Dólar oficial", "% mensual (depreciación)", "dep_oficial", "M", 2,
+        nivel="tcr", nivel_titulo="Tipo de cambio real oficial, nov-2023 = 100", ref=100),
+    Var("brecha", "Brecha cambiaria", "% (CCL sobre oficial)", "brecha", "M", 1, ref=0),
+    Var("reservas", "Reservas brutas del BCRA", "% mensual", "d_reservas", "M", 2,
+        nivel="reservas_m", nivel_titulo="Miles de millones de US$, fin de mes"),
+    Var("riesgo_pais", "Riesgo país", "puntos básicos", "riesgo_pais", "D", 0, log=True),
+    Var("adr", "Acciones argentinas (13 ADRs)", "% diario (logarítmico)", "r_adr", "D", 2,
+        nivel="adr_canasta", nivel_titulo="Canasta equiponderada en US$, 2/1/2019 = 1 (escala log)", log=True),
+    Var("bonos", "Bonos soberanos (GD30/GD35/GD41)", "% diario", "r_bonos", "D", 2,
+        nivel="bonos_idx", nivel_titulo="Retorno total en US$, 1/10/2021 = 100", ref=100),
+    Var("pobreza", "Pobreza", "% de personas", "pobreza", "S", 1),
+    Var("desocupacion", "Desocupación", "% de la PEA", "desocupacion", "Q", 1),
+]
+
+
+FUENTES = {
+    "INDEC (IPC)": ["infl_m", "infl_a", "infl_nucleo", "infl_regulados"],
+    "INDEC (Índice de salarios), deflactado por el IPC": ["sal_priv_reg", "sal_publico", "sal_no_reg"],
+    "Ministerio de Trabajo (SMVM), deflactado por el IPC del INDEC": ["smvm"],
+    "INDEC, microdatos de la EPH (cálculo propio)": ["eph_ratio", "eph_tasa"],
+    "INDEC (EMAE y cuentas nacionales trimestrales)": ["emae", "pib", "ibif", "tasa_inv", "consumo", "cpub", "expo", "impo"],
+    "Secretaría de Hacienda (IMIG, base caja) e INDEC (PBI nominal, IPC)": ["gasto", "ingresos", "res_primario",
+                                                                          "res_financiero", "intereses", "jubilaciones",
+                                                                          "sub_energia"],
+    "BCRA (Com. A 3500) e INDEC (IPC)": ["dolar"],
+    "BCRA (oficial) y ArgentinaDatos (contado con liquidación)": ["brecha"],
+    "BCRA (API de Estadísticas Monetarias, variable 1)": ["reservas"],
+    "JP Morgan (EMBI) vía ArgentinaDatos": ["riesgo_pais"],
+    "Yahoo Finance (precios ajustados)": ["adr"],
+    "BYMA vía data912 (retorno total con cupones y amortizaciones)": ["bonos"],
+    "INDEC (EPH)": ["pobreza", "desocupacion"],
+}
+for _v in VARIABLES_FICHA:
+    _v.fuente = next(f for f, ks in FUENTES.items() if _v.key in ks)
+
+
+def bins_sturges(x: pd.Series) -> list[float]:
+    """Intervalos de igual ancho con k de Sturges sobre el rango P2,5-P97,5 y un ancho "redondo";
+    lo que queda fuera se agrupa en dos clases abiertas en los extremos (colas pesadas)."""
+    x = x.dropna()
+    k = int(np.ceil(1 + 3.322 * np.log10(len(x))))
+    lo, hi = x.quantile(0.025), x.quantile(0.975)
+    crudo = (hi - lo) / k
+    mag = 10 ** np.floor(np.log10(crudo))
+    paso = min(m * mag for m in (1, 2, 2.5, 5, 10) if m * mag >= crudo)
+    a, b = np.floor(lo / paso) * paso, np.ceil(hi / paso) * paso
+    if b <= hi:
+        b += paso
+    edges = list(np.round(np.arange(a, b + paso / 2, paso), 10))
+    if x.min() < edges[0]:
+        edges = [-np.inf] + edges
+    if x.max() >= edges[-1]:
+        edges = edges + [np.inf]
+    return edges
+
+
+def etiqueta_intervalo(a: float, b: float, d: int) -> str:
+    if np.isinf(a):
+        return f"menos de {num(b, d)}"
+    if np.isinf(b):
+        return f"{num(a, d)} o más"
+    return f"[{num(a, d)}; {num(b, d)})"
+
+
+def frecuencias(x: pd.Series, freq: str, edges: list[float]) -> pd.DataFrame:
+    """Frecuencia absoluta, relativa y relativa acumulada por gobierno, con intervalos comunes."""
+    finitos = [e for e in edges if np.isfinite(e)]
+    anchos = np.diff(finitos)
+    d = 0 if np.allclose(finitos, np.round(finitos)) else (1 if np.allclose(np.array(finitos) * 10, np.round(np.array(finitos) * 10)) else 2)
+    cols = {}
+    for g, v in por_gobierno(x, freq).items():
+        fa = pd.cut(v, edges, right=False).value_counts(sort=False).to_numpy()
+        cols[(g, "fa")] = fa
+        cols[(g, "fr")] = 100 * fa / fa.sum()
+        cols[(g, "Fr")] = np.cumsum(100 * fa / fa.sum())
+    out = pd.DataFrame(cols, index=[etiqueta_intervalo(a, b, d) for a, b in zip(edges[:-1], edges[1:])])
+    out.attrs["igual_ancho"] = bool(np.allclose(anchos, anchos[0]))
+    return out
+
+
+def fmt_frecuencias_gen(t: pd.DataFrame) -> str:
+    govs = list(dict.fromkeys(g for g, _ in t.columns))
+    txt = pd.DataFrame(index=t.index)
+    for g in govs:
+        txt[f"{g} fa"] = t[(g, "fa")].astype(int)
+        txt[f"{g} fr %"] = [num(x, 1) for x in t[(g, "fr")]]
+        txt[f"{g} Fr acum. %"] = [num(x, 1) for x in t[(g, "Fr")]]
+    total = {c: "" for c in txt.columns}
+    for g in govs:
+        total[f"{g} fa"] = int(t[(g, "fa")].sum())
+        total[f"{g} fr %"] = "100,0"
+    txt = pd.concat([txt, pd.DataFrame(total, index=["**Total**"])])
+    txt.index.name = "Intervalo"
+    return md_tabla(txt)
+
+
+def eje_log(a: plt.Axes) -> None:
+    a.set_yscale("log")
+    a.yaxis.set_major_locator(mtick.FixedLocator([0.1, 0.2, 0.5, 1, 2, 5, 10, 20, 50, 100, 200, 500, 1000, 2000, 5000, 10000]))
+    a.yaxis.set_major_formatter(mtick.FuncFormatter(lambda y, _: num(y, 0 if y >= 1 else 1)))
+    a.yaxis.set_minor_formatter(mtick.NullFormatter())
+
+
+def fig_variable(s: dict, v: Var, edges: list[float], n: int) -> str:
+    """Panel de una variable: serie de tiempo por gobierno, histograma, boxplot y barras de media y mediana."""
+    x = s[v.dist].dropna()
+    x = x[gobierno(x.index, v.freq).notna()]
+    grupos = por_gobierno(x, v.freq)
+    fig = plt.figure(figsize=(16, 10))
+    gs = fig.add_gridspec(2, 3, height_ratios=[1.15, 1], hspace=0.42, wspace=0.28)
+    a = fig.add_subplot(gs[0, :])
+    serie = s[v.nivel].dropna() if v.nivel else x
+    serie = serie.loc[DESDE:]
+    if v.freq == "D":
+        a.plot(serie.index, serie, color=style.INK, lw=1.0)
+    elif v.freq in ("Q", "S"):
+        off = pd.DateOffset(days=45) if v.freq == "Q" else pd.DateOffset(months=3)
+        a.plot(serie.index + off, serie, color=style.INK, lw=1.6, marker="o", ms=3.5)
+    else:
+        a.plot(serie.index, serie, color=style.INK, lw=1.6)
+    if v.ref is not None:
+        a.axhline(v.ref, color=style.INK_2, lw=0.8)
+    if v.log:
+        eje_log(a)
+    a.set_title(f"{v.titulo}: serie de tiempo")
+    style.subtitle(a, v.nivel_titulo if v.nivel else v.unidad)
+    sombrear(a)
+
+    finitos = [e for e in edges if np.isfinite(e)]
+    igual = np.allclose(np.diff(finitos), np.diff(finitos)[0])
+    b = fig.add_subplot(gs[1, 0])
+    for g, gv in grupos.items():
+        clip = gv.clip(finitos[0], finitos[-1] - 1e-9)
+        w = np.full(len(clip), 100 / len(clip))
+        b.hist(clip, bins=finitos, weights=w, density=not igual, histtype="step", lw=2, color=COLOR[g], label=g)
+        b.hist(clip, bins=finitos, weights=w, density=not igual, histtype="stepfilled", alpha=0.12, color=COLOR[g])
+    b.set_title("Histograma por gobierno", fontsize=12.5)
+    style.subtitle(b, ("% de observaciones" if igual else "densidad (intervalos de distinto ancho)") + f" · {v.unidad}")
+    b.grid(axis="x", visible=False)
+
+    c = fig.add_subplot(gs[1, 1])
+    bp = c.boxplot(list(grupos.values()), tick_labels=list(grupos), patch_artist=True, widths=0.55,
+                   medianprops={"color": style.INK, "lw": 1.6}, whiskerprops={"color": style.INK_2},
+                   capprops={"color": style.INK_2}, flierprops={"marker": "o", "ms": 3, "mfc": style.MUTED, "mec": "none"})
+    for patch, g in zip(bp["boxes"], grupos):
+        patch.set_facecolor(COLOR[g])
+        patch.set_alpha(0.75)
+        patch.set_edgecolor(style.INK_2)
+    nota = ""
+    if v.log and not v.nivel:
+        eje_log(c)
+    else:
+        # Un solo valor extremo (la devaluación de dic-23, por ejemplo) aplasta las cajas: se recorta el eje
+        # a los bigotes y se anotan los valores que quedan fuera de escala.
+        bigotes = np.concatenate([w.get_ydata() for w in bp["whiskers"]])
+        lo, hi = bigotes.min(), bigotes.max()
+        rango = hi - lo
+        extremos = {g: gv[(gv > hi + 1.5 * rango) | (gv < lo - 1.5 * rango)] for g, gv in grupos.items()}
+        if any(len(f) for f in extremos.values()):
+            y0 = lo - 0.6 * rango if any((f < lo).any() for f in extremos.values()) else c.get_ylim()[0]
+            y1 = hi + 0.6 * rango if any((f > hi).any() for f in extremos.values()) else c.get_ylim()[1]
+            c.set_ylim(y0, y1)
+            fuera = {g: gv[(gv > y1) | (gv < y0)] for g, gv in grupos.items()}
+            nota = " Boxplot recortado; quedan fuera de escala: " + "; ".join(
+                f"{g} " + ", ".join(num(z, v.dec) for z in f.sort_values(key=abs, ascending=False).head(3))
+                + (f" y {len(f) - 3} más" if len(f) > 3 else "") for g, f in fuera.items() if len(f)) + "."
+    c.grid(axis="x", visible=False)
+    c.set_title("Boxplot por gobierno", fontsize=12.5)
+    style.subtitle(c, v.unidad)
+
+    d = fig.add_subplot(gs[1, 2])
+    xs = np.arange(len(grupos))
+    medias = [gv.mean() for gv in grupos.values()]
+    medianas = [gv.median() for gv in grupos.values()]
+    d.bar(xs - 0.2, medias, width=0.38, color=[COLOR[g] for g in grupos], label="Media")
+    d.bar(xs + 0.2, medianas, width=0.38, color=[COLOR[g] for g in grupos], alpha=0.45, hatch="//", edgecolor=style.SURFACE,
+          label="Mediana")
+    dd = v.dec if abs(np.nanmax(np.abs(medias + medianas))) < 100 else 0
+    d.set_xticks(xs, [f"{g}\n{num(me, dd)} | {num(md, dd)}" for g, me, md in zip(grupos, medias, medianas)], fontsize=9.5)
+    d.axhline(0, color=style.INK_2, lw=0.8)
+    d.grid(axis="x", visible=False)
+    d.set_title("Media y mediana por gobierno", fontsize=12.5)
+    style.subtitle(d, f"lleno: media · rayado: mediana (valores debajo)")
+    leyenda_gobiernos(fig, 1.0)
+    style.source(fig, f"Fuente: {v.fuente}. Histograma, boxplot y barras describen la serie en {v.unidad}; los valores fuera "
+                      "de los intervalos del histograma se acumulan en las clases de los bordes." + nota + "\n" + nota_eventos())
+    nombre = f"V{n:02d}_{v.key}.png"
+    style.save(fig, FIG / nombre)
+    return nombre
+
+
 # ---------------------------------------------------------------- documento
 
 VARIABLES = [  # clave, frecuencia, decimales
@@ -924,13 +1360,38 @@ VARIABLES = [  # clave, frecuencia, decimales
     ("d_gasto_real", "M", 1), ("res_primario", "M", 2), ("res_financiero", "M", 2), ("sub_energia_pib", "Q", 2),
     ("dep_oficial", "M", 2), ("tcr", "M", 1), ("riesgo_pais", "D", 0), ("r_adr", "D", 2), ("r_bonos", "D", 2),
     ("pobreza", "S", 1), ("desocupacion", "Q", 1)]
+_ya = {k for k, _, _ in VARIABLES}
+for _v in VARIABLES_FICHA:
+    for _k in (_v.dist, _v.nivel):
+        if _k and _k not in _ya:
+            VARIABLES.append((_k, _v.freq, _v.dec))
+            _ya.add(_k)
 
 
 def render(plantilla: str, valores: dict[str, str]) -> str:
     faltan = sorted(set(re.findall(r"\{\{(\w+)\}\}", plantilla)) - set(valores))
     if faltan:
         raise KeyError(f"La plantilla usa claves que el script no calcula: {faltan}")
-    return re.sub(r"\{\{(\w+)\}\}", lambda mt: valores[mt.group(1)], plantilla)
+    doc = re.sub(r"\{\{(\w+)\}\}", lambda mt: valores[mt.group(1)], plantilla)
+    # Numeración correlativa: la plantilla escribe "Tabla 2.#" y "Figura 2.#" y acá se numeran en orden
+    for nombre in ("Tabla", "Figura"):
+        n = iter(range(1, 1000))
+        doc = re.sub(rf"{nombre} 2\.#", lambda _: f"{nombre} 2.{next(n)}", doc)
+    return doc
+
+
+README = HERE.parent.parent / "README.md"
+MARCAS = ("<!-- descriptivo:inicio -->", "<!-- descriptivo:fin -->")
+
+
+def volcar_en_readme(doc: str) -> None:
+    """Copia el capítulo dentro del README, entre las dos marcas: baja un nivel cada título (el
+    README ya tiene su propio título) y reescribe las rutas de las figuras relativas a la raíz."""
+    doc = re.sub(r"^(#+) ", r"#\1 ", doc, flags=re.M)
+    doc = doc.replace("](figuras/", "](estudio/descriptivo/figuras/")
+    txt = README.read_text(encoding="utf-8")
+    a, b = txt.index(MARCAS[0]) + len(MARCAS[0]), txt.index(MARCAS[1])
+    README.write_text(txt[:a] + "\n\n" + doc.strip() + "\n\n" + txt[b:], encoding="utf-8")
 
 
 def main() -> None:
@@ -943,18 +1404,29 @@ def main() -> None:
     for k, freq, dec in VARIABLES:
         v[f"desc_{k}"], desc[k] = tabla_descriptiva(s[k], freq, dec)
     desc["infl_m"].index.name = None
+    frec: dict[str, pd.DataFrame] = {}
 
     fig_series_precios(s)
     fig_series_actividad(s)
     fig_series_mercados(s)
-    frec = fig_histogramas(s)
-    for g, t in frec.items():
-        v[f"frec_{g}"] = fmt_frecuencias(t)
-    n = {g: int(t["Frec. absoluta"].sum()) for g, t in frec.items()}
-    v["sturges"] = ", ".join(f"{g} {num(1 + 3.322 * np.log10(nn), 1)}" for g, nn in n.items())
-    for g, t in frec.items():
-        v[f"menos2_{g}"] = num(t.loc[t.index[:2], "Frec. relativa (%)"].sum(), 0)      # meses con inflación < 2%
-        v[f"mas5_{g}"] = num(t.loc[t.index[5:], "Frec. relativa (%)"].sum(), 0)        # meses con inflación >= 5%
+    # Tratamiento completo por variable: panel de figuras, tabla de frecuencias y estadística de la serie graficada
+    for i, vv in enumerate(VARIABLES_FICHA, 1):
+        x = s[vv.dist].dropna()
+        x = x[gobierno(x.index, vv.freq).notna()]
+        edges = vv.bins or bins_sturges(x)
+        fr = frecuencias(x, vv.freq, edges)
+        v[f"frec_{vv.key}"] = fmt_frecuencias_gen(fr)
+        v[f"fig_{vv.key}"] = fig_variable(s, vv, edges, i)
+        v[f"k_{vv.key}"] = num(np.ceil(1 + 3.322 * np.log10(len(x))), 0)
+        for g in ORDEN:
+            if (g, "fr") in fr.columns:
+                v[f"{vv.key}_{g}_moda"] = fr[(g, "fr")].idxmax()
+                v[f"{vv.key}_{g}_moda_fr"] = num(fr[(g, "fr")].max(), 1)
+        frec[vv.key] = fr
+    t = frec["infl_m"]
+    for g in ORDEN:
+        v[f"menos2_{g}"] = num(t[(g, "fr")].iloc[:2].sum(), 0)      # meses con inflación < 2%
+        v[f"mas5_{g}"] = num(t[(g, "fr")].iloc[5:].sum(), 0)        # meses con inflación >= 5%
 
     var = variacion_por_gobierno(s)
     fig_barras(s, desc, var)
@@ -976,6 +1448,44 @@ def main() -> None:
         for c, tag in [("Nominal anual (%)", "nom"), ("Inflación anual (%)", "inf"), ("Real anual (%)", "real"),
                        ("Nominal acum. (%)", "nomac"), ("Real acum. (%)", "realac")]:
             v[f"nr_{key}_{r['Gobierno']}_{tag}"] = num(r[c], 1)
+
+    # Bivariado
+    mats = matriz_corr(s)
+    fig_corr(mats)
+    for g, mt in mats.items():
+        gg = "Total" if g == "Toda la muestra" else g
+        v[f"corr_{gg}"] = md_tabla(mt.map(lambda x: num(x, 2)).rename_axis("ρ de Spearman"))
+        for a_ in mt.index:
+            for b_ in mt.columns:
+                v[f"rho_{gg}_{MATRIZ[a_]}_{MATRIZ[b_]}"] = num(mt.loc[a_, b_], 2)
+    pares, crudo = tabla_pares(s)
+    v["tabla_pares"] = md_tabla(pares, index=False)
+    for (tit, g), (r, pr, rho, ps, nn) in crudo.items():
+        clave = re.sub(r"\W+", "_", tit.lower().translate(str.maketrans("áéíóúñ", "aeioun"))).strip("_")
+        gg = "Total" if g == "Toda la muestra" else g
+        v[f"par_{clave}_{gg}_r"], v[f"par_{clave}_{gg}_p"] = num(r, 2), num(pr, 3)
+        v[f"par_{clave}_{gg}_rho"], v[f"par_{clave}_{gg}_n"] = num(rho, 2), str(nn)
+    fig_dispersion(s, crudo)
+    ccs = {"Pearson": traspaso(s), "Spearman": traspaso(s, metodo="spearman")}
+    nn = {g: int(len(x)) for g, x in por_gobierno(s["infl_m"], "M").items()}
+    fig_traspaso(ccs, nn)
+    v["tabla_traspaso"] = md_tabla(pd.concat({m_: c_.map(lambda x: num(x, 2)) for m_, c_ in ccs.items()}, axis=1)
+                                   .set_axis([f"{g} ({m_})" for m_, g in pd.concat(ccs, axis=1).columns], axis=1))
+    for m_, cc in ccs.items():
+        for g in cc.columns:
+            for k in cc.index:
+                v[f"cc{m_[0].lower()}_{g}_{k}"] = num(cc.loc[k, g], 2)
+    sec = sectores(s)
+    fig_sectores(sec)
+    st = sec.map(lambda x: num(x, 1))
+    st.columns = [f"{c} (% i.a. promedio)" if c in ORDEN else c for c in st.columns]
+    v["tabla_sectores"] = md_tabla(st.rename_axis("Sector"))
+    v["sect_ultimo"] = sec.attrs["ultimo"]
+    for k_, r_ in sec.iterrows():
+        clave = re.sub(r"\W+", "_", k_.lower().translate(str.maketrans("áéíóúñ", "aeioun"))).strip("_")
+        v[f"sec_{clave}"] = num(r_["Últimos 4 trim. vs 2023 (%)"], 1)
+        for g in ORDEN:
+            v[f"sec_{clave}_{g}"] = num(r_[g], 1)
 
     gasto = composicion_gasto(d["f"], d["energia"])
     dem = composicion_demanda(d["dem_n"])
@@ -1017,21 +1527,22 @@ def main() -> None:
     # Números citados en el texto
     def med(k: str, g: str, c: str = "Media", dd: int = 1) -> str:
         return num(desc[k].loc[g, c], dd)
-    for k, dd in [("infl_m", 2), ("d_sal_priv_reg", 2), ("d_sal_publico", 2), ("d_sal_no_reg", 2), ("g_pib", 1), ("g_ibif", 1),
-                  ("res_primario", 2), ("res_financiero", 2), ("gasto_pib", 1), ("sub_energia_pib", 2), ("tasa_inv", 1),
-                  ("dep_oficial", 2), ("riesgo_pais", 0), ("r_adr", 2), ("r_bonos", 2), ("pobreza", 1),
-                  ("desocupacion", 1), ("d_emae", 2), ("infl_a", 1), ("tcr", 1), ("d_gasto_real", 1), ("smvm", 1), ("emae", 1),
-                  ("sal_priv_reg", 1), ("sal_publico", 1), ("sal_no_reg", 1), ("dn_sal_priv_reg", 2), ("dn_sal_publico", 2),
-                  ("dn_sal_no_reg", 2), ("dn_smvm", 2)]:
-        for g in ORDEN:
-            if g in desc[k].index:
-                for c, tag in [("Media", "media"), ("Mediana", "mediana"), ("Desvío", "desvio"), ("CV (%)", "cv"),
-                               ("Asimetría", "asim"), ("Curtosis", "curt"), ("Mín", "min"), ("Máx", "max")]:
-                    v[f"{k}_{g}_{tag}"] = med(k, g, c, 2 if tag in ("asim", "curt") else dd)
+    for k, _, dd in VARIABLES:
+        for g in desc[k].index:
+            gg = "Total" if g == "Toda la muestra" else g
+            for c, tag in [("Media", "media"), ("Mediana", "mediana"), ("Desvío", "desvio"), ("CV (%)", "cv"),
+                           ("Asimetría", "asim"), ("Curtosis", "curt"), ("Mín", "min"), ("Máx", "max"),
+                           ("Q1", "q1"), ("Q3", "q3"), ("N", "n")]:
+                v[f"{k}_{gg}_{tag}"] = med(k, g, c, 0 if tag == "n" else (2 if tag in ("asim", "curt") else dd))
     v["ultimo_ipc"] = base.mes(s["infl_m"].index[-1])
+    if "--claves" in sys.argv:          # lista las claves disponibles para escribir la plantilla
+        for k in sorted(v):
+            print(k, "=", v[k][:80].replace("\n", " "))
+        return
     with open(HERE / "plantilla.md", encoding="utf-8") as fh:
         doc = render(fh.read(), v)
     (HERE / "ANALISIS_DESCRIPTIVO.md").write_text(doc, encoding="utf-8")
+    volcar_en_readme(doc)
     print(f"Escrito {HERE / 'ANALISIS_DESCRIPTIVO.md'} y {len(list(FIG.glob('*.png')))} figuras en {FIG}")
 
 
